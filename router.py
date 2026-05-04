@@ -67,7 +67,7 @@ def start_as_client(name, ip, port):
     thr2 = threading.Thread(target=type_new_messages)
     thr2.start()
 def start(ip, port, name,mode):
-    if mode == "client":
+    if mode == "Client":
         start_as_client(name, ip, port)
-    elif mode == "server":
+    elif mode == "Server":
         start_as_server(name, ip, port)
