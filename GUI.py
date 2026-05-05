@@ -41,6 +41,15 @@ def update_chat():
 
     root.after(1000, update_chat)
 
+def send_message(event=None):
+    msg = msg_entry.get().strip()
+    if msg:
+        try:
+            router.send_message(msg)
+        except Exception as e:
+            print("Send error:", e)
+        msg_entry.delete(0, tk.END)
+
 
 root = tk.Tk()
 root.title("Network Config")
@@ -86,5 +95,16 @@ chat_text = tk.Text(chat_frame,
                     insertbackground="white",
                     state="disabled")
 chat_text.pack(fill="both", expand=True)
+
+bottom_frame = tk.Frame(chat_frame, bg="#1e1e1e")
+bottom_frame.pack(fill="x")
+
+
+msg_entry = tk.Entry(bottom_frame,
+                     bg="#2b2b2b",
+                     fg="white",
+                     insertbackground="white")
+msg_entry.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+msg_entry.bind("<Return>", send_message)
 
 root.mainloop()
