@@ -2,12 +2,13 @@ import router
 import tkinter as tk
 
 from tkinter import ttk
+nameg = None
 def submit():
     ip = ip_entry.get()
     port = port_entry.get()
     name = name_entry.get()
     mode = mode_var.get()
-
+    nameg = name
     import threading
     threading.Thread(
         target=router.start,
@@ -45,7 +46,7 @@ def send_message(event=None):
     msg = msg_entry.get().strip()
     if msg:
         try:
-            router.send_message(msg)
+            router.send_message(msg, nameg)
         except Exception as e:
             print("Send error:", e)
         msg_entry.delete(0, tk.END)
