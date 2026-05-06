@@ -1,14 +1,18 @@
 import router
 import tkinter as tk
-
 from tkinter import ttk
+from PIL import Image, ImageTk
+
 nameg = None
+
 def submit():
+    global nameg
     ip = ip_entry.get()
     port = port_entry.get()
     name = name_entry.get()
     mode = mode_var.get()
     nameg = name
+
     import threading
     threading.Thread(
         target=router.start,
@@ -42,6 +46,7 @@ def update_chat():
 
     root.after(1000, update_chat)
 
+
 def send_message(event=None):
     msg = msg_entry.get().strip()
     if msg:
@@ -54,8 +59,21 @@ def send_message(event=None):
 
 root = tk.Tk()
 root.title("Network Config")
-root.geometry("400x400")
+root.geometry("400x500")
 root.configure(bg="#1e1e1e")
+
+
+img = Image.open("kototost.png")
+img_main = img.copy()
+img_main.thumbnail((150, 150))
+
+img_chat = img.copy()
+img_chat.thumbnail((80, 80))
+
+logo_main = ImageTk.PhotoImage(img_main)
+logo_chat = ImageTk.PhotoImage(img_chat)
+
+root.iconphoto(False, logo_main)
 
 style = ttk.Style()
 style.theme_use("default")
@@ -65,6 +83,9 @@ style.configure("TRadiobutton", background="#1e1e1e", foreground="#ffffff")
 
 main_frame = tk.Frame(root, bg="#1e1e1e")
 main_frame.pack(fill="both", expand=True)
+
+logo_label_main = tk.Label(main_frame, image=logo_main, bg="#1e1e1e")
+logo_label_main.pack(pady=30)
 
 tk.Label(main_frame, text="IP address:", bg="#1e1e1e", fg="white").pack()
 ip_entry = tk.Entry(main_frame, bg="#2b2b2b", fg="white", insertbackground="white")
@@ -81,7 +102,6 @@ name_entry.pack()
 mode_var = tk.StringVar(value="Client")
 
 tk.Label(main_frame, text="Mode:", bg="#1e1e1e", fg="white").pack()
-
 ttk.Radiobutton(main_frame, text="Client", variable=mode_var, value="Client").pack()
 ttk.Radiobutton(main_frame, text="Server", variable=mode_var, value="Server").pack()
 
@@ -89,6 +109,9 @@ tk.Button(main_frame, text="Confirm", command=submit,
           bg="#3a3a3a", fg="white", activebackground="#505050").pack(pady=10)
 
 chat_frame = tk.Frame(root, bg="#1e1e1e")
+
+logo_label_chat = tk.Label(chat_frame, image=logo_chat, bg="#1e1e1e")
+logo_label_chat.pack(pady=5)
 
 chat_text = tk.Text(chat_frame,
                     bg="#1e1e1e",
@@ -99,7 +122,6 @@ chat_text.pack(fill="both", expand=True)
 
 bottom_frame = tk.Frame(chat_frame, bg="#1e1e1e")
 bottom_frame.pack(fill="x")
-
 
 msg_entry = tk.Entry(bottom_frame,
                      bg="#2b2b2b",
