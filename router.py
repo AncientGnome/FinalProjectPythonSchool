@@ -2,57 +2,68 @@ import threading
 import socket
 
 messages = []
+conn = None
 
-conn, add = None,None
+
 def send_message(msg, name):
-    while True:
+    global conn
+    try:
         conn.send(msg.encode())
-        messages.append((msg, name))
+        messages.append(f"{name}: {msg}")
+    except Exception as e:
+        print("Send error:", e)
+
+
 def start_as_server(name, ip, port):
-    global conn, add, messages
-    new_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    global conn
 
-    new_server.bind((ip, int(port)))
-    new_server.listen()
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((ip, int(port)))
+    server.listen(1)
 
-    print("Created")
-    conn, add = new_server.accept()
-    client = (conn.recv(1024).decode())
+    conn, addr = server.accept()
+
+    client_name = conn.recv(1024).decode()
     conn.send(name.encode())
-    def check_new_messages():
+
+    def receive():
         while True:
-            message = (conn.recv(1024)).decode()
-            messages.append((message, client))
+            try:
+                msg = conn.recv(1024).decode()
+                if not msg:
+                    break
+                messages.append(f"{client_name}: {msg}")
+            except:
+                break
 
-
-    thr = threading.Thread(target=check_new_messages)
-    thr.start()
-
+    threading.Thread(target=receive, daemon=True).start()
 
 
 def start_as_client(name, ip, port):
-    global conn, add, messages
+    global conn
 
-    socket_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((ip, int(port)))
 
-    socket_server.connect((ip, int(port)))
-    socket_server.send(name.encode())
-    conn = socket_server
-    socket_name = socket_server.recv(1024)
-    server_name = socket_name.decode()
+    client.send(name.encode())
+    server_name = client.recv(1024).decode()
 
+    conn = client
 
-    def check_new_messages():
+    def receive():
         while True:
-            message = (socket_server.recv(1024)).decode()
-            messages.append((message, server_name))
+            try:
+                msg = client.recv(1024).decode()
+                if not msg:
+                    break
+                messages.append(f"{server_name}: {msg}")
+            except:
+                break
+
+    threading.Thread(target=receive, daemon=True).start()
 
 
-
-    thr = threading.Thread(target=check_new_messages)
-    thr.start()
-
-def start(ip, port, name,mode):
+def start(ip, port, name, mode):
     if mode == "Client":
         start_as_client(name, ip, port)
     elif mode == "Server":
