@@ -44,7 +44,7 @@ def update_chat():
     except Exception as e:
         print("Error Updating:", e)
 
-    root.after(1000, update_chat)
+    root.after(500, update_chat)
 
 
 def send_message(event=None):
@@ -61,7 +61,6 @@ root = tk.Tk()
 root.title("Network Config")
 root.geometry("400x500")
 root.configure(bg="#1e1e1e")
-
 
 img = Image.open("kototost.png")
 img_main = img.copy()
