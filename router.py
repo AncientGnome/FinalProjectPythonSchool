@@ -2,13 +2,14 @@ import threading
 import socket
 
 messages = []
+
 conn, add = None,None
 def send_message(msg, name):
     while True:
         conn.send(msg.encode())
         messages.append((msg, name))
 def start_as_server(name, ip, port):
-
+    global conn, add, messages
     new_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     new_server.bind((ip, int(port)))
@@ -30,11 +31,13 @@ def start_as_server(name, ip, port):
 
 
 def start_as_client(name, ip, port):
+    global conn, add, messages
+
     socket_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     socket_server.connect((ip, int(port)))
     socket_server.send(name.encode())
-
+    conn = socket_server
     socket_name = socket_server.recv(1024)
     server_name = socket_name.decode()
 
