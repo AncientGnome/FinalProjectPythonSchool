@@ -51,7 +51,7 @@ def update_chat():
         chat_text.yview(tk.END)
 
     except Exception as e:
-        print("Error Updating:", e)
+        print("Error Updatin:", e)
 
     root.after(500, update_chat)
 
@@ -63,7 +63,7 @@ def send_message(event=None):
         try:
             router.send_message(msg, nameg)
         except Exception as e:
-            print("Send error:", e)
+            print("Send error: ", e)
 
         msg_entry.delete(0, tk.END)
 
