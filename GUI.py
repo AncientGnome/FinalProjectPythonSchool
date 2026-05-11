@@ -122,7 +122,7 @@ news_box = tk.Frame(
 )
 news_box.pack(fill="both", expand=True, padx=10)
 
-for item in news.getNews:
+for item in news.texts:
     news_card = tk.Frame(
         news_box,
         bg=CARD

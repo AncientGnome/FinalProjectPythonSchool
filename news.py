@@ -1,8 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
+texts = []
 
 def getNews():
-    texts = []
+
     url = "https://www.bbc.com/"
 
     headers = {
@@ -18,4 +19,4 @@ def getNews():
         if text:
             texts.append(text)
     return texts
-
+getNews()
