@@ -7,11 +7,12 @@ conn = None
 
 def send_message(msg, name):
     global conn
+
     try:
         conn.send(msg.encode())
         messages.append(f"{name}: {msg}")
     except Exception as e:
-        print("Send error:", e)
+        print("Send error: ", e)
 
 
 def start_as_server(name, ip, port):
@@ -33,6 +34,7 @@ def start_as_server(name, ip, port):
                 if not msg:
                     break
                 messages.append(f"{client_name}: {msg}")
+
             except:
                 break
 
@@ -57,6 +59,7 @@ def start_as_client(name, ip, port):
                 if not msg:
                     break
                 messages.append(f"{server_name}: {msg}")
+
             except:
                 break
 
@@ -66,5 +69,6 @@ def start_as_client(name, ip, port):
 def start(ip, port, name, mode):
     if mode == "Client":
         start_as_client(name, ip, port)
+
     elif mode == "Server":
         start_as_server(name, ip, port)
