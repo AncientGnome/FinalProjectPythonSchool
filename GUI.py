@@ -1,4 +1,5 @@
 import router
+import news
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
@@ -70,7 +71,7 @@ def send_message(event=None):
 
 root = tk.Tk()
 root.title("LAN Messenger")
-root.geometry("430x620")
+root.geometry("750x620")
 root.configure(bg=BG)
 
 img = Image.open("kototost.png")
@@ -99,8 +100,52 @@ style.configure(
 main_frame = tk.Frame(root, bg=BG)
 main_frame.pack(fill="both", expand=True)
 
-canvas = tk.Canvas(
+left_panel = tk.Frame(
     main_frame,
+    bg="#181818",
+    width=220
+)
+left_panel.pack(side="left", fill="y")
+
+news_title = tk.Label(
+    left_panel,
+    text="NEWS",
+    bg="#181818",
+    fg=ACCENT,
+    font=("Segoe UI", 16, "bold")
+)
+news_title.pack(pady=(20, 10))
+
+news_box = tk.Frame(
+    left_panel,
+    bg="#181818"
+)
+news_box.pack(fill="both", expand=True, padx=10)
+
+for item in news.getNews:
+    news_card = tk.Frame(
+        news_box,
+        bg=CARD
+    )
+    news_card.pack(fill="x", pady=6)
+
+    tk.Label(
+        news_card,
+        text=item,
+        bg=CARD,
+        fg=TEXT,
+        wraplength=180,
+        justify="left",
+        padx=10,
+        pady=10,
+        font=("Segoe UI", 9)
+    ).pack(anchor="w")
+
+right_panel = tk.Frame(main_frame, bg=BG)
+right_panel.pack(side="right", fill="both", expand=True)
+
+canvas = tk.Canvas(
+    right_panel,
     bg=BG,
     highlightthickness=0
 )
@@ -108,17 +153,17 @@ canvas.place(relwidth=1, relheight=1)
 
 canvas.create_oval(-100, -100, 180, 180, fill="#1d3557", outline="")
 canvas.create_oval(300, 500, 550, 750, fill="#16213e", outline="")
-canvas.create_rectangle(40, 40, 390, 570, fill=CARD, outline="")
+canvas.create_rectangle(40, 40, 470, 570, fill=CARD, outline="")
 
 logo_label_main = tk.Label(
-    main_frame,
+    right_panel,
     image=logo_main,
     bg=CARD
 )
 logo_label_main.place(relx=0.5, y=90, anchor="center")
 
 title = tk.Label(
-    main_frame,
+    right_panel,
     text="LAN Messenger",
     font=("Segoe UI", 22, "bold"),
     bg=CARD,
@@ -127,7 +172,7 @@ title = tk.Label(
 title.place(relx=0.5, y=180, anchor="center")
 
 subtitle = tk.Label(
-    main_frame,
+    right_panel,
     text="Fast local communication",
     font=("Segoe UI", 10),
     bg=CARD,
@@ -136,7 +181,7 @@ subtitle = tk.Label(
 subtitle.place(relx=0.5, y=210, anchor="center")
 
 tk.Label(
-    main_frame,
+    right_panel,
     text="IP Address",
     bg=CARD,
     fg=TEXT,
@@ -144,17 +189,17 @@ tk.Label(
 ).place(x=75, y=260)
 
 ip_entry = tk.Entry(
-    main_frame,
+    right_panel,
     bg=ENTRY,
     fg=TEXT,
     insertbackground="white",
     relief="flat",
     font=("Segoe UI", 11)
 )
-ip_entry.place(x=75, y=285, width=280, height=35)
+ip_entry.place(x=75, y=285, width=320, height=35)
 
 tk.Label(
-    main_frame,
+    right_panel,
     text="Port",
     bg=CARD,
     fg=TEXT,
@@ -162,17 +207,17 @@ tk.Label(
 ).place(x=75, y=335)
 
 port_entry = tk.Entry(
-    main_frame,
+    right_panel,
     bg=ENTRY,
     fg=TEXT,
     insertbackground="white",
     relief="flat",
     font=("Segoe UI", 11)
 )
-port_entry.place(x=75, y=360, width=280, height=35)
+port_entry.place(x=75, y=360, width=320, height=35)
 
 tk.Label(
-    main_frame,
+    right_panel,
     text="Username",
     bg=CARD,
     fg=TEXT,
@@ -180,18 +225,18 @@ tk.Label(
 ).place(x=75, y=410)
 
 name_entry = tk.Entry(
-    main_frame,
+    right_panel,
     bg=ENTRY,
     fg=TEXT,
     insertbackground="white",
     relief="flat",
     font=("Segoe UI", 11)
 )
-name_entry.place(x=75, y=435, width=280, height=35)
+name_entry.place(x=75, y=435, width=320, height=35)
 
 mode_var = tk.StringVar(value="Client")
 
-mode_frame = tk.Frame(main_frame, bg=CARD)
+mode_frame = tk.Frame(right_panel, bg=CARD)
 mode_frame.place(relx=0.5, y=500, anchor="center")
 
 client_btn = tk.Radiobutton(
@@ -223,7 +268,7 @@ server_btn = tk.Radiobutton(
 server_btn.pack(side="left", padx=10)
 
 confirm_btn = tk.Button(
-    main_frame,
+    right_panel,
     text="Confirm",
     command=submit,
     bg=ACCENT,
@@ -234,7 +279,7 @@ confirm_btn = tk.Button(
     font=("Segoe UI", 11, "bold"),
     cursor="hand2"
 )
-confirm_btn.place(relx=0.5, y=550, anchor="center", width=280, height=40)
+confirm_btn.place(relx=0.5, y=550, anchor="center", width=320, height=40)
 
 chat_frame = tk.Frame(root, bg=BG)
 
