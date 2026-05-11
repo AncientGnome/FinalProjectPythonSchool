@@ -1,17 +1,21 @@
 import requests
 from bs4 import BeautifulSoup
 
-url = "https://www.bbc.com/"
+def getNews():
+    texts = []
+    url = "https://www.bbc.com/"
 
-headers = {
-    "User-Agent": "Mozilla/5.0"
-}
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
-response = requests.get(url, headers=headers)
-result = BeautifulSoup(response.text, "html.parser")
-headlines = result.find_all(["h1", "h2", "h3"])
+    response = requests.get(url, headers=headers)
+    result = BeautifulSoup(response.text, "html.parser")
+    headlines = result.find_all(["h1", "h2", "h3"])
 
-for h in headlines[:10]:
-    text = h.get_text(strip=True)
-    if text:
-        print(text)
+    for h in headlines[:10]:
+        text = h.get_text(strip=True)
+        if text:
+            texts.append(text)
+    return texts
+
