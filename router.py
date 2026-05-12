@@ -1,74 +1,80 @@
-import threading
 import socket
+import threading
+import pickle
 
 messages = []
+
 conn = None
 
 
-def send_message(msg, name):
+def send_message(data):
     global conn
 
     try:
-        conn.send(msg.encode())
-        messages.append(f"{name}: {msg}")
+        encoded = pickle.dumps(data)
+
+        conn.send(encoded)
+
+        messages.append(data)
+
     except Exception as e:
-        print("Send error: ", e)
+        print("Send Error:", e)
+
+
+def receive_messages():
+    global conn
+
+    while True:
+        try:
+            data = conn.recv(4096)
+
+            if data:
+                decoded = pickle.loads(data)
+
+                messages.append(decoded)
+
+        except Exception as e:
+            print("Receive Error:", e)
+            break
 
 
 def start_as_server(name, ip, port):
     global conn
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
     server.bind((ip, int(port)))
+
     server.listen(1)
+
+    print("Server started")
 
     conn, addr = server.accept()
 
-    client_name = conn.recv(1024).decode()
-    conn.send(name.encode())
-
-    def receive():
-        while True:
-            try:
-                msg = conn.recv(1024).decode()
-                if not msg:
-                    break
-                messages.append(f"{client_name}: {msg}")
-
-            except:
-                break
-
-    threading.Thread(target=receive, daemon=True).start()
+    threading.Thread(
+        target=receive_messages,
+        daemon=True
+    ).start()
 
 
 def start_as_client(name, ip, port):
     global conn
 
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((ip, int(port)))
 
-    client.send(name.encode())
-    server_name = client.recv(1024).decode()
+    client.connect((ip, int(port)))
 
     conn = client
 
-    def receive():
-        while True:
-            try:
-                msg = client.recv(1024).decode()
-                if not msg:
-                    break
-                messages.append(f"{server_name}: {msg}")
-
-            except:
-                break
-
-    threading.Thread(target=receive, daemon=True).start()
+    threading.Thread(
+        target=receive_messages,
+        daemon=True
+    ).start()
 
 
 def start(ip, port, name, mode):
+
     if mode == "Client":
         start_as_client(name, ip, port)
-
     elif mode == "Server":
         start_as_server(name, ip, port)
