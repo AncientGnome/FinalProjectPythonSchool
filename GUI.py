@@ -6,6 +6,7 @@ from PIL import Image, ImageTk
 
 nameg = None
 pfp_path = None
+rendered_messages = 0
 
 BG = "#121212"
 CARD = "#1e1e1e"
@@ -48,6 +49,7 @@ def submit():
     nameg = name
 
     import threading
+
     threading.Thread(
         target=router.start,
         args=(ip, port, name, mode),
@@ -64,22 +66,112 @@ def open_chat():
 
 
 def update_chat():
+    global rendered_messages
+
     try:
         messages = router.messages
 
-        chat_text.config(state="normal")
-        chat_text.delete("1.0", tk.END)
+        if len(messages) == rendered_messages:
+            root.after(300, update_chat)
+            return
 
-        for msg in messages:
-            chat_text.insert(tk.END, "  " + msg + "\n\n")
+        for msg_data in messages[rendered_messages:]:
 
-        chat_text.config(state="disabled")
-        chat_text.yview(tk.END)
+            sender = msg_data.get("name")
+            message = msg_data.get("message")
+            pfp = msg_data.get("pfp")
+
+            is_me = sender == nameg
+
+            outer = tk.Frame(
+                messages_frame,
+                bg=BG
+            )
+            outer.pack(
+                fill="x",
+                pady=8,
+                padx=10,
+                anchor="e" if is_me else "w"
+            )
+
+            bubble_row = tk.Frame(
+                outer,
+                bg=BG
+            )
+            bubble_row.pack(
+                anchor="e" if is_me else "w"
+            )
+
+            if pfp:
+                try:
+                    pfp_img = Image.open(pfp)
+                    pfp_img.thumbnail((40, 40))
+
+                    pfp_render = ImageTk.PhotoImage(pfp_img)
+
+                    pfp_label_chat = tk.Label(
+                        bubble_row,
+                        image=pfp_render,
+                        bg=BG
+                    )
+
+                    pfp_label_chat.image = pfp_render
+
+                    pfp_label_chat.pack(
+                        side="right" if is_me else "left",
+                        padx=8
+                    )
+
+                except:
+                    pass
+
+            bubble = tk.Frame(
+                bubble_row,
+                bg=ACCENT if is_me else CARD,
+                padx=14,
+                pady=10
+            )
+
+            bubble.pack(
+                side="right" if is_me else "left"
+            )
+
+            sender_label = tk.Label(
+                bubble,
+                text=sender,
+                bg=ACCENT if is_me else CARD,
+                fg="#dcdcdc",
+                font=("Segoe UI", 8, "bold")
+            )
+
+            sender_label.pack(anchor="w")
+
+            msg_label = tk.Label(
+                bubble,
+                text=message,
+                bg=ACCENT if is_me else CARD,
+                fg="white",
+                wraplength=300,
+                justify="left",
+                font=("Segoe UI", 10)
+            )
+
+            msg_label.pack(anchor="w")
+
+        rendered_messages = len(messages)
+
+        canvas_chat.update_idletasks()
+
+        canvas_chat.configure(
+            scrollregion=canvas_chat.bbox("all")
+        )
+
+        canvas_chat.yview_moveto(1.0)
 
     except Exception as e:
-        print("Error Updatin:", e)
+        print("Error Updating:", e)
 
-    root.after(500, update_chat)
+    root.after(300, update_chat)
 
 
 def send_message(event=None):
@@ -87,9 +179,16 @@ def send_message(event=None):
 
     if msg:
         try:
-            router.send_message(msg, nameg)
+            router.send_message(
+                {
+                    "name": nameg,
+                    "message": msg,
+                    "pfp": pfp_path
+                }
+            )
+
         except Exception as e:
-            print("Send error: ", e)
+            print("Send error:", e)
 
         msg_entry.delete(0, tk.END)
 
@@ -130,6 +229,7 @@ left_panel = tk.Frame(
     bg="#181818",
     width=220
 )
+
 left_panel.pack(side="left", fill="y")
 
 news_title = tk.Label(
@@ -139,19 +239,23 @@ news_title = tk.Label(
     fg=ACCENT,
     font=("Segoe UI", 16, "bold")
 )
+
 news_title.pack(pady=(20, 10))
 
 news_box = tk.Frame(
     left_panel,
     bg="#181818"
 )
+
 news_box.pack(fill="both", expand=True, padx=10)
 
 for item in news.texts:
+
     news_card = tk.Frame(
         news_box,
         bg=CARD
     )
+
     news_card.pack(fill="x", pady=6)
 
     tk.Label(
@@ -174,6 +278,7 @@ canvas = tk.Canvas(
     bg=BG,
     highlightthickness=0
 )
+
 canvas.place(relwidth=1, relheight=1)
 
 canvas.create_oval(-100, -100, 180, 180, fill="#1d3557", outline="")
@@ -184,6 +289,7 @@ pfp_frame = tk.Frame(
     right_panel,
     bg=CARD
 )
+
 pfp_frame.place(relx=0.5, y=90, anchor="center")
 
 pfp_label = tk.Label(
@@ -191,6 +297,7 @@ pfp_label = tk.Label(
     image=logo_main,
     bg=CARD
 )
+
 pfp_label.pack()
 
 pfp_button = tk.Button(
@@ -203,6 +310,7 @@ pfp_button = tk.Button(
     font=("Segoe UI", 9, "bold"),
     cursor="hand2"
 )
+
 pfp_button.pack(pady=8)
 
 title = tk.Label(
@@ -212,6 +320,7 @@ title = tk.Label(
     bg=CARD,
     fg=TEXT
 )
+
 title.place(relx=0.5, y=210, anchor="center")
 
 subtitle = tk.Label(
@@ -221,6 +330,7 @@ subtitle = tk.Label(
     bg=CARD,
     fg=SUBTEXT
 )
+
 subtitle.place(relx=0.5, y=240, anchor="center")
 
 tk.Label(
@@ -239,6 +349,7 @@ ip_entry = tk.Entry(
     relief="flat",
     font=("Segoe UI", 11)
 )
+
 ip_entry.place(x=75, y=305, width=320, height=35)
 
 tk.Label(
@@ -257,6 +368,7 @@ port_entry = tk.Entry(
     relief="flat",
     font=("Segoe UI", 11)
 )
+
 port_entry.place(x=75, y=380, width=320, height=35)
 
 tk.Label(
@@ -275,11 +387,13 @@ name_entry = tk.Entry(
     relief="flat",
     font=("Segoe UI", 11)
 )
+
 name_entry.place(x=75, y=455, width=320, height=35)
 
 mode_var = tk.StringVar(value="Client")
 
 mode_frame = tk.Frame(right_panel, bg=CARD)
+
 mode_frame.place(relx=0.5, y=520, anchor="center")
 
 client_btn = tk.Radiobutton(
@@ -294,6 +408,7 @@ client_btn = tk.Radiobutton(
     activeforeground=TEXT,
     font=("Segoe UI", 10)
 )
+
 client_btn.pack(side="left", padx=10)
 
 server_btn = tk.Radiobutton(
@@ -308,6 +423,7 @@ server_btn = tk.Radiobutton(
     activeforeground=TEXT,
     font=("Segoe UI", 10)
 )
+
 server_btn.pack(side="left", padx=10)
 
 confirm_btn = tk.Button(
@@ -322,6 +438,7 @@ confirm_btn = tk.Button(
     font=("Segoe UI", 11, "bold"),
     cursor="hand2"
 )
+
 confirm_btn.place(relx=0.5, y=570, anchor="center", width=320, height=40)
 
 chat_frame = tk.Frame(root, bg=BG)
@@ -334,6 +451,7 @@ logo_label_chat = tk.Label(
     image=logo_chat,
     bg=CARD
 )
+
 logo_label_chat.pack(side="left", padx=15, pady=5)
 
 chat_title = tk.Label(
@@ -343,48 +461,89 @@ chat_title = tk.Label(
     bg=CARD,
     fg=TEXT
 )
+
 chat_title.pack(side="left")
 
-chat_text = tk.Text(
+canvas_chat = tk.Canvas(
+    chat_frame,
+    bg=BG,
+    highlightthickness=0
+)
+
+canvas_chat.pack(
+    fill="both",
+    expand=True,
+    side="left"
+)
+
+scrollbar = tk.Scrollbar(
+    chat_frame,
+    orient="vertical",
+    command=canvas_chat.yview
+)
+
+scrollbar.pack(side="right", fill="y")
+
+canvas_chat.configure(
+    yscrollcommand=scrollbar.set
+)
+
+messages_frame = tk.Frame(
+    canvas_chat,
+    bg=BG
+)
+
+canvas_chat.create_window(
+    (0, 0),
+    window=messages_frame,
+    anchor="nw"
+)
+
+bottom_frame = tk.Frame(
     chat_frame,
     bg="#181818",
-    fg="#e5e5e5",
-    insertbackground="white",
-    relief="flat",
-    font=("Consolas", 11),
-    state="disabled",
-    padx=15,
-    pady=15,
-    wrap="word"
+    height=75
 )
-chat_text.pack(fill="both", expand=True, padx=10, pady=10)
 
-bottom_frame = tk.Frame(chat_frame, bg=BG)
-bottom_frame.pack(fill="x", padx=10, pady=(0, 10))
+bottom_frame.pack(fill="x")
 
 msg_entry = tk.Entry(
     bottom_frame,
-    bg=ENTRY,
+    bg="#242424",
     fg="white",
     insertbackground="white",
     relief="flat",
     font=("Segoe UI", 11)
 )
-msg_entry.pack(side="left", fill="x", expand=True, ipady=10, padx=(0, 10))
+
+msg_entry.pack(
+    side="left",
+    fill="x",
+    expand=True,
+    padx=(15, 10),
+    pady=15,
+    ipady=12
+)
+
 msg_entry.bind("<Return>", send_message)
 
 send_btn = tk.Button(
     bottom_frame,
-    text="Send",
+    text="➜",
     command=send_message,
     bg=ACCENT,
     fg="white",
-    activebackground="#3578e5",
-    activeforeground="white",
     relief="flat",
-    font=("Segoe UI", 10, "bold"),
-    cursor="hand2"
+    font=("Segoe UI", 14, "bold"),
+    cursor="hand2",
+    width=3
 )
-send_btn.pack(side="right", ipadx=15, ipady=8)
+
+send_btn.pack(
+    side="right",
+    padx=(0, 15),
+    pady=15,
+    ipady=4
+)
 
 root.mainloop()
