@@ -1,10 +1,11 @@
 import router
 import news
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
 
 nameg = None
+pfp_path = None
 
 BG = "#121212"
 CARD = "#1e1e1e"
@@ -14,12 +15,36 @@ TEXT = "#ffffff"
 SUBTEXT = "#9f9f9f"
 
 
+def choose_pfp():
+    global pfp_path, pfp_preview
+
+    file_path = filedialog.askopenfilename(
+        title="Choose Profile Picture",
+        filetypes=[
+            ("Image Files", "*.png *.jpg *.jpeg")
+        ]
+    )
+
+    if file_path:
+        pfp_path = file_path
+
+        pfp_img = Image.open(file_path)
+        pfp_img.thumbnail((70, 70))
+
+        pfp_preview = ImageTk.PhotoImage(pfp_img)
+
+        pfp_label.config(image=pfp_preview)
+        pfp_label.image = pfp_preview
+
+
 def submit():
     global nameg
+
     ip = ip_entry.get()
     port = port_entry.get()
     name = name_entry.get()
     mode = mode_var.get()
+
     nameg = name
 
     import threading
@@ -122,7 +147,7 @@ news_box = tk.Frame(
 )
 news_box.pack(fill="both", expand=True, padx=10)
 
-for item in news.getNews:
+for item in news.texts:
     news_card = tk.Frame(
         news_box,
         bg=CARD
@@ -155,12 +180,30 @@ canvas.create_oval(-100, -100, 180, 180, fill="#1d3557", outline="")
 canvas.create_oval(300, 500, 550, 750, fill="#16213e", outline="")
 canvas.create_rectangle(40, 40, 470, 570, fill=CARD, outline="")
 
-logo_label_main = tk.Label(
+pfp_frame = tk.Frame(
     right_panel,
+    bg=CARD
+)
+pfp_frame.place(relx=0.5, y=90, anchor="center")
+
+pfp_label = tk.Label(
+    pfp_frame,
     image=logo_main,
     bg=CARD
 )
-logo_label_main.place(relx=0.5, y=90, anchor="center")
+pfp_label.pack()
+
+pfp_button = tk.Button(
+    pfp_frame,
+    text="Choose PFP",
+    command=choose_pfp,
+    bg=ACCENT,
+    fg="white",
+    relief="flat",
+    font=("Segoe UI", 9, "bold"),
+    cursor="hand2"
+)
+pfp_button.pack(pady=8)
 
 title = tk.Label(
     right_panel,
@@ -169,7 +212,7 @@ title = tk.Label(
     bg=CARD,
     fg=TEXT
 )
-title.place(relx=0.5, y=180, anchor="center")
+title.place(relx=0.5, y=210, anchor="center")
 
 subtitle = tk.Label(
     right_panel,
@@ -178,7 +221,7 @@ subtitle = tk.Label(
     bg=CARD,
     fg=SUBTEXT
 )
-subtitle.place(relx=0.5, y=210, anchor="center")
+subtitle.place(relx=0.5, y=240, anchor="center")
 
 tk.Label(
     right_panel,
@@ -186,7 +229,7 @@ tk.Label(
     bg=CARD,
     fg=TEXT,
     font=("Segoe UI", 10)
-).place(x=75, y=260)
+).place(x=75, y=280)
 
 ip_entry = tk.Entry(
     right_panel,
@@ -196,7 +239,7 @@ ip_entry = tk.Entry(
     relief="flat",
     font=("Segoe UI", 11)
 )
-ip_entry.place(x=75, y=285, width=320, height=35)
+ip_entry.place(x=75, y=305, width=320, height=35)
 
 tk.Label(
     right_panel,
@@ -204,7 +247,7 @@ tk.Label(
     bg=CARD,
     fg=TEXT,
     font=("Segoe UI", 10)
-).place(x=75, y=335)
+).place(x=75, y=355)
 
 port_entry = tk.Entry(
     right_panel,
@@ -214,7 +257,7 @@ port_entry = tk.Entry(
     relief="flat",
     font=("Segoe UI", 11)
 )
-port_entry.place(x=75, y=360, width=320, height=35)
+port_entry.place(x=75, y=380, width=320, height=35)
 
 tk.Label(
     right_panel,
@@ -222,7 +265,7 @@ tk.Label(
     bg=CARD,
     fg=TEXT,
     font=("Segoe UI", 10)
-).place(x=75, y=410)
+).place(x=75, y=430)
 
 name_entry = tk.Entry(
     right_panel,
@@ -232,12 +275,12 @@ name_entry = tk.Entry(
     relief="flat",
     font=("Segoe UI", 11)
 )
-name_entry.place(x=75, y=435, width=320, height=35)
+name_entry.place(x=75, y=455, width=320, height=35)
 
 mode_var = tk.StringVar(value="Client")
 
 mode_frame = tk.Frame(right_panel, bg=CARD)
-mode_frame.place(relx=0.5, y=500, anchor="center")
+mode_frame.place(relx=0.5, y=520, anchor="center")
 
 client_btn = tk.Radiobutton(
     mode_frame,
@@ -279,7 +322,7 @@ confirm_btn = tk.Button(
     font=("Segoe UI", 11, "bold"),
     cursor="hand2"
 )
-confirm_btn.place(relx=0.5, y=550, anchor="center", width=320, height=40)
+confirm_btn.place(relx=0.5, y=570, anchor="center", width=320, height=40)
 
 chat_frame = tk.Frame(root, bg=BG)
 
