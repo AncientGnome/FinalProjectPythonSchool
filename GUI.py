@@ -3,6 +3,7 @@ import news
 import tkinter as tk
 from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
+import os
 
 nameg = None
 pfp_path = None
@@ -65,6 +66,21 @@ def open_chat():
     update_chat()
 
 
+def create_circle_pfp(path, size=(42, 42)):
+    try:
+        img = Image.open(path).convert("RGB")
+        img.thumbnail(size)
+
+        render = ImageTk.PhotoImage(img)
+        return render
+
+    except:
+        fallback = Image.open("kototost.png").convert("RGB")
+        fallback.thumbnail(size)
+
+        return ImageTk.PhotoImage(fallback)
+
+
 def update_chat():
     global rendered_messages
 
@@ -87,47 +103,44 @@ def update_chat():
                 messages_frame,
                 bg=BG
             )
+
             outer.pack(
                 fill="x",
-                pady=8,
-                padx=10,
-                anchor="e" if is_me else "w"
+                pady=6,
+                padx=14
             )
 
-            bubble_row = tk.Frame(
+            row = tk.Frame(
                 outer,
                 bg=BG
             )
-            bubble_row.pack(
+
+            row.pack(
                 anchor="e" if is_me else "w"
             )
 
-            if pfp:
-                try:
-                    pfp_img = Image.open(pfp)
-                    pfp_img.thumbnail((40, 40))
+            bubble_color = ACCENT if is_me else "#242424"
 
-                    pfp_render = ImageTk.PhotoImage(pfp_img)
+            if not is_me:
 
-                    pfp_label_chat = tk.Label(
-                        bubble_row,
-                        image=pfp_render,
-                        bg=BG
-                    )
+                pfp_render = create_circle_pfp(pfp)
 
-                    pfp_label_chat.image = pfp_render
+                pfp_label_chat = tk.Label(
+                    row,
+                    image=pfp_render,
+                    bg=BG
+                )
 
-                    pfp_label_chat.pack(
-                        side="right" if is_me else "left",
-                        padx=8
-                    )
+                pfp_label_chat.image = pfp_render
 
-                except:
-                    pass
+                pfp_label_chat.pack(
+                    side="left",
+                    padx=(0, 8)
+                )
 
             bubble = tk.Frame(
-                bubble_row,
-                bg=ACCENT if is_me else CARD,
+                row,
+                bg=bubble_color,
                 padx=14,
                 pady=10
             )
@@ -139,8 +152,8 @@ def update_chat():
             sender_label = tk.Label(
                 bubble,
                 text=sender,
-                bg=ACCENT if is_me else CARD,
-                fg="#dcdcdc",
+                bg=bubble_color,
+                fg="#d6d6d6",
                 font=("Segoe UI", 8, "bold")
             )
 
@@ -149,7 +162,7 @@ def update_chat():
             msg_label = tk.Label(
                 bubble,
                 text=message,
-                bg=ACCENT if is_me else CARD,
+                bg=bubble_color,
                 fg="white",
                 wraplength=300,
                 justify="left",
@@ -158,9 +171,26 @@ def update_chat():
 
             msg_label.pack(anchor="w")
 
+            if is_me:
+
+                pfp_render = create_circle_pfp(pfp)
+
+                pfp_label_chat = tk.Label(
+                    row,
+                    image=pfp_render,
+                    bg=BG
+                )
+
+                pfp_label_chat.image = pfp_render
+
+                pfp_label_chat.pack(
+                    side="right",
+                    padx=(8, 0)
+                )
+
         rendered_messages = len(messages)
 
-        canvas_chat.update_idletasks()
+        messages_frame.update_idletasks()
 
         canvas_chat.configure(
             scrollregion=canvas_chat.bbox("all")
@@ -178,6 +208,7 @@ def send_message(event=None):
     msg = msg_entry.get().strip()
 
     if msg:
+
         try:
             router.send_message(
                 {
@@ -195,7 +226,7 @@ def send_message(event=None):
 
 root = tk.Tk()
 root.title("LAN Messenger")
-root.geometry("750x620")
+root.geometry("760x640")
 root.configure(bg=BG)
 
 img = Image.open("kototost.png")
@@ -213,13 +244,6 @@ root.iconphoto(False, logo_main)
 
 style = ttk.Style()
 style.theme_use("clam")
-
-style.configure(
-    "TRadiobutton",
-    background=CARD,
-    foreground=TEXT,
-    font=("Segoe UI", 10)
-)
 
 main_frame = tk.Frame(root, bg=BG)
 main_frame.pack(fill="both", expand=True)
@@ -240,7 +264,7 @@ news_title = tk.Label(
     font=("Segoe UI", 16, "bold")
 )
 
-news_title.pack(pady=(20, 10))
+news_title.pack(pady=(20, 12))
 
 news_box = tk.Frame(
     left_panel,
@@ -443,13 +467,18 @@ confirm_btn.place(relx=0.5, y=570, anchor="center", width=320, height=40)
 
 chat_frame = tk.Frame(root, bg=BG)
 
-topbar = tk.Frame(chat_frame, bg=CARD, height=65)
+topbar = tk.Frame(
+    chat_frame,
+    bg="#181818",
+    height=65
+)
+
 topbar.pack(fill="x")
 
 logo_label_chat = tk.Label(
     topbar,
     image=logo_chat,
-    bg=CARD
+    bg="#181818"
 )
 
 logo_label_chat.pack(side="left", padx=15, pady=5)
@@ -458,31 +487,44 @@ chat_title = tk.Label(
     topbar,
     text="LAN Messenger",
     font=("Segoe UI", 15, "bold"),
-    bg=CARD,
+    bg="#181818",
     fg=TEXT
 )
 
 chat_title.pack(side="left")
 
-canvas_chat = tk.Canvas(
+chat_container = tk.Frame(
     chat_frame,
+    bg=BG
+)
+
+chat_container.pack(
+    fill="both",
+    expand=True
+)
+
+canvas_chat = tk.Canvas(
+    chat_container,
     bg=BG,
     highlightthickness=0
 )
 
 canvas_chat.pack(
+    side="left",
     fill="both",
-    expand=True,
-    side="left"
+    expand=True
 )
 
 scrollbar = tk.Scrollbar(
-    chat_frame,
+    chat_container,
     orient="vertical",
     command=canvas_chat.yview
 )
 
-scrollbar.pack(side="right", fill="y")
+scrollbar.pack(
+    side="right",
+    fill="y"
+)
 
 canvas_chat.configure(
     yscrollcommand=scrollbar.set
@@ -502,10 +544,13 @@ canvas_chat.create_window(
 bottom_frame = tk.Frame(
     chat_frame,
     bg="#181818",
-    height=75
+    height=80
 )
 
-bottom_frame.pack(fill="x")
+bottom_frame.pack(
+    side="bottom",
+    fill="x"
+)
 
 msg_entry = tk.Entry(
     bottom_frame,
