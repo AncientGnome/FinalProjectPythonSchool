@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
 import os
+import shutil
 
 nameg = None
 pfp_path = None
@@ -15,6 +16,9 @@ ENTRY = "#2b2b2b"
 ACCENT = "#4a90ff"
 TEXT = "#ffffff"
 SUBTEXT = "#9f9f9f"
+
+if not os.path.exists("pfps"):
+    os.makedirs("pfps")
 
 
 def choose_pfp():
@@ -28,9 +32,15 @@ def choose_pfp():
     )
 
     if file_path:
-        pfp_path = file_path
 
-        pfp_img = Image.open(file_path)
+        filename = os.path.basename(file_path)
+        new_path = os.path.join("pfps", filename)
+
+        shutil.copy(file_path, new_path)
+
+        pfp_path = new_path
+
+        pfp_img = Image.open(new_path)
         pfp_img.thumbnail((70, 70))
 
         pfp_preview = ImageTk.PhotoImage(pfp_img)
@@ -67,24 +77,31 @@ def open_chat():
 
 
 def create_circle_pfp(path, size=(42, 42)):
-    try:
-        img = Image.open(path).convert("RGB")
-        img.thumbnail(size)
 
-        render = ImageTk.PhotoImage(img)
-        return render
+    try:
+
+        if path and os.path.exists(path):
+
+            img = Image.open(path).convert("RGB")
+            img.thumbnail(size)
+
+            render = ImageTk.PhotoImage(img)
+            return render
 
     except:
-        fallback = Image.open("kototost.png").convert("RGB")
-        fallback.thumbnail(size)
+        pass
 
-        return ImageTk.PhotoImage(fallback)
+    fallback = Image.open("kototost.png").convert("RGB")
+    fallback.thumbnail(size)
+
+    return ImageTk.PhotoImage(fallback)
 
 
 def update_chat():
     global rendered_messages
 
     try:
+
         messages = router.messages
 
         if len(messages) == rendered_messages:
@@ -205,11 +222,13 @@ def update_chat():
 
 
 def send_message(event=None):
+
     msg = msg_entry.get().strip()
 
     if msg:
 
         try:
+
             router.send_message(
                 {
                     "name": nameg,
