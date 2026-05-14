@@ -1,18 +1,21 @@
 import socket
 import threading
 import pickle
-
+import random
 messages = []
 
 conn = None
-
+KEY = None
 
 def send_message(data):
+    global KEY
     global conn
 
     try:
         encoded = pickle.dumps(data)
 
+        for i in range(1, KEY):
+            encoded = encoded + str(i)
         conn.send(encoded)
 
         messages.append(data)
@@ -22,6 +25,7 @@ def send_message(data):
 
 
 def receive_messages():
+    global KEY
     global conn
 
     while True:
@@ -39,6 +43,7 @@ def receive_messages():
 
 
 def start_as_server(name, ip, port):
+    global KEY
     global conn
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,8 +52,7 @@ def start_as_server(name, ip, port):
 
     server.listen(1)
 
-    print("Server started")
-
+    KEY = random.randint(10000, 99999)
     conn, addr = server.accept()
 
     threading.Thread(
@@ -58,6 +62,7 @@ def start_as_server(name, ip, port):
 
 
 def start_as_client(name, ip, port):
+    global KEY
     global conn
 
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
