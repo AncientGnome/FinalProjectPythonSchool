@@ -3,8 +3,8 @@ import news
 import tkinter as tk
 from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
-import base64
-import io
+import os
+import shutil
 
 nameg = None
 pfp_path = None
@@ -16,6 +16,9 @@ ENTRY = "#2b2b2b"
 ACCENT = "#4a90ff"
 TEXT = "#ffffff"
 SUBTEXT = "#9f9f9f"
+
+if not os.path.exists("pfps"):
+    os.makedirs("pfps")
 
 
 def choose_pfp():
@@ -29,9 +32,15 @@ def choose_pfp():
     )
 
     if file_path:
-        pfp_path = file_path
 
-        pfp_img = Image.open(file_path)
+        filename = os.path.basename(file_path)
+        new_path = os.path.join("pfps", filename)
+
+        shutil.copy(file_path, new_path)
+
+        pfp_path = new_path
+
+        pfp_img = Image.open(new_path)
         pfp_img.thumbnail((70, 70))
 
         pfp_preview = ImageTk.PhotoImage(pfp_img)
@@ -67,44 +76,32 @@ def open_chat():
     update_chat()
 
 
-def create_circle_pfp(image_data, size=(42, 42)):
+def create_circle_pfp(path, size=(42, 42)):
 
     try:
 
-        if image_data:
+        if path and os.path.exists(path):
 
-            decoded = base64.b64decode(image_data)
+            img = Image.open(path).convert("RGB")
+            img.thumbnail(size)
 
-            img = Image.open(
-                io.BytesIO(decoded)
-            ).convert("RGB")
+            render = ImageTk.PhotoImage(img)
+            return render
 
-        else:
-            img = Image.open("kototost.png").convert("RGB")
+    except:
+        pass
 
-        img.thumbnail(size)
+    fallback = Image.open("kototost.png").convert("RGB")
+    fallback.thumbnail(size)
 
-        render = ImageTk.PhotoImage(img)
-
-        return render
-
-    except Exception as e:
-
-        print("PFP render error:", e)
-
-        fallback = Image.open(
-            "kototost.png"
-        ).convert("RGB")
-
-        fallback.thumbnail(size)
-
-        return ImageTk.PhotoImage(fallback)
+    return ImageTk.PhotoImage(fallback)
 
 
 def update_chat():
     global rendered_messages
 
     try:
+
         messages = router.messages
 
         if len(messages) == rendered_messages:
@@ -225,28 +222,18 @@ def update_chat():
 
 
 def send_message(event=None):
+
     msg = msg_entry.get().strip()
 
     if msg:
 
-        pfp_data = None
-
         try:
-            if pfp_path:
-                with open(pfp_path, "rb") as img_file:
-                    pfp_data = base64.b64encode(
-                        img_file.read()
-                    ).decode("utf-8")
 
-        except Exception as e:
-            print("PFP encode error:", e)
-
-        try:
             router.send_message(
                 {
                     "name": nameg,
                     "message": msg,
-                    "pfp": pfp_data
+                    "pfp": pfp_path
                 }
             )
 
