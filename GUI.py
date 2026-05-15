@@ -10,12 +10,12 @@ nameg = None
 pfp_path = None
 rendered_messages = 0
 
-BG = "#121212"
-CARD = "#1e1e1e"
-ENTRY = "#2b2b2b"
-ACCENT = "#4a90ff"
+BG = "#0f0f0f"
+CARD = "#1a1a1a"
+ENTRY = "#262626"
+ACCENT = "#ff2b2b"
 TEXT = "#ffffff"
-SUBTEXT = "#9f9f9f"
+SUBTEXT = "#a0a0a0"
 
 if not os.path.exists("pfps"):
     os.makedirs("pfps")
@@ -170,7 +170,7 @@ def update_chat():
                 bubble,
                 text=sender,
                 bg=bubble_color,
-                fg="#d6d6d6",
+                fg="#f0f0f0",
                 font=("Segoe UI", 8, "bold")
             )
 
@@ -269,7 +269,7 @@ main_frame.pack(fill="both", expand=True)
 
 left_panel = tk.Frame(
     main_frame,
-    bg="#181818",
+    bg="#141414",
     width=220
 )
 
@@ -278,7 +278,7 @@ left_panel.pack(side="left", fill="y")
 news_title = tk.Label(
     left_panel,
     text="NEWS",
-    bg="#181818",
+    bg="#141414",
     fg=ACCENT,
     font=("Segoe UI", 16, "bold")
 )
@@ -287,7 +287,7 @@ news_title.pack(pady=(20, 12))
 
 news_box = tk.Frame(
     left_panel,
-    bg="#181818"
+    bg="#141414"
 )
 
 news_box.pack(fill="both", expand=True, padx=10)
@@ -324,8 +324,8 @@ canvas = tk.Canvas(
 
 canvas.place(relwidth=1, relheight=1)
 
-canvas.create_oval(-100, -100, 180, 180, fill="#1d3557", outline="")
-canvas.create_oval(300, 500, 550, 750, fill="#16213e", outline="")
+canvas.create_oval(-100, -100, 180, 180, fill="#3a0000", outline="")
+canvas.create_oval(300, 500, 550, 750, fill="#220000", outline="")
 canvas.create_rectangle(40, 40, 470, 570, fill=CARD, outline="")
 
 pfp_frame = tk.Frame(
@@ -350,6 +350,8 @@ pfp_button = tk.Button(
     bg=ACCENT,
     fg="white",
     relief="flat",
+    activebackground="#d10000",
+    activeforeground="white",
     font=("Segoe UI", 9, "bold"),
     cursor="hand2"
 )
@@ -475,7 +477,7 @@ confirm_btn = tk.Button(
     command=submit,
     bg=ACCENT,
     fg="white",
-    activebackground="#3578e5",
+    activebackground="#d10000",
     activeforeground="white",
     relief="flat",
     font=("Segoe UI", 11, "bold"),
@@ -488,7 +490,7 @@ chat_frame = tk.Frame(root, bg=BG)
 
 topbar = tk.Frame(
     chat_frame,
-    bg="#181818",
+    bg="#141414",
     height=65
 )
 
@@ -497,7 +499,7 @@ topbar.pack(fill="x")
 logo_label_chat = tk.Label(
     topbar,
     image=logo_chat,
-    bg="#181818"
+    bg="#141414"
 )
 
 logo_label_chat.pack(side="left", padx=15, pady=5)
@@ -506,7 +508,7 @@ chat_title = tk.Label(
     topbar,
     text="LAN Messenger",
     font=("Segoe UI", 15, "bold"),
-    bg="#181818",
+    bg="#141414",
     fg=TEXT
 )
 
@@ -562,7 +564,7 @@ canvas_chat.create_window(
 
 bottom_frame = tk.Frame(
     chat_frame,
-    bg="#181818",
+    bg="#141414",
     height=80
 )
 
@@ -573,7 +575,7 @@ bottom_frame.pack(
 
 msg_entry = tk.Entry(
     bottom_frame,
-    bg="#242424",
+    bg="#202020",
     fg="white",
     insertbackground="white",
     relief="flat",
@@ -598,6 +600,8 @@ send_btn = tk.Button(
     bg=ACCENT,
     fg="white",
     relief="flat",
+    activebackground="#d10000",
+    activeforeground="white",
     font=("Segoe UI", 14, "bold"),
     cursor="hand2",
     width=3
