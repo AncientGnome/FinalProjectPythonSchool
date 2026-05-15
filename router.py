@@ -2,21 +2,23 @@ import socket
 import threading
 import pickle
 import random
+
 messages = []
 
 conn = None
 KEY = None
+FirstM = False
+
 
 def send_message(data):
-    global KEY
     global conn
-
+    global KEY
     try:
         encoded = pickle.dumps(data)
 
-        for i in range(1, KEY):
-            encoded = encoded + str(i)
-        conn.send(encoded)
+        size = len(encoded).to_bytes(4, "big")
+
+        conn.sendall(size + encoded)
 
         messages.append(data)
 
@@ -25,17 +27,33 @@ def send_message(data):
 
 
 def receive_messages():
-    global KEY
     global conn
-
+    global KEY
     while True:
+
         try:
-            data = conn.recv(4096)
 
-            if data:
-                decoded = pickle.loads(data)
+            raw_size = conn.recv(4)
 
-                messages.append(decoded)
+            if not raw_size:
+                break
+
+            size = int.from_bytes(raw_size, "big")
+
+            data = b""
+
+            while len(data) < size:
+
+                packet = conn.recv(4096)
+
+                if not packet:
+                    break
+
+                data += packet
+
+            decoded = pickle.loads(data)
+
+            messages.append(decoded)
 
         except Exception as e:
             print("Receive Error:", e)
@@ -43,16 +61,16 @@ def receive_messages():
 
 
 def start_as_server(name, ip, port):
-    global KEY
     global conn
-
+    global KEY
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     server.bind((ip, int(port)))
 
     server.listen(1)
 
-    KEY = random.randint(10000, 99999)
+    print("Server started")
+
     conn, addr = server.accept()
 
     threading.Thread(
@@ -62,7 +80,6 @@ def start_as_server(name, ip, port):
 
 
 def start_as_client(name, ip, port):
-    global KEY
     global conn
 
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -81,5 +98,6 @@ def start(ip, port, name, mode):
 
     if mode == "Client":
         start_as_client(name, ip, port)
+
     elif mode == "Server":
         start_as_server(name, ip, port)
