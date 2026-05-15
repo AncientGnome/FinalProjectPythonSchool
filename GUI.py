@@ -1,24 +1,33 @@
+
+
 import router
 import news
 import tkinter as tk
 from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
-import os
-import shutil
+import base64
+import io
+from datetime import datetime
 
 nameg = None
 pfp_path = None
 rendered_messages = 0
 
 BG = "#0f0f0f"
-CARD = "#1a1a1a"
-ENTRY = "#262626"
+CARD = "#181818"
+ENTRY = "#232323"
 ACCENT = "#ff2b2b"
+ACCENT_HOVER = "#ff4444"
 TEXT = "#ffffff"
-SUBTEXT = "#a0a0a0"
+SUBTEXT = "#aaaaaa"
 
-if not os.path.exists("pfps"):
-    os.makedirs("pfps")
+
+def on_enter(e, btn):
+    btn.config(bg=ACCENT_HOVER)
+
+
+def on_leave(e, btn):
+    btn.config(bg=ACCENT)
 
 
 def choose_pfp():
@@ -33,14 +42,9 @@ def choose_pfp():
 
     if file_path:
 
-        filename = os.path.basename(file_path)
-        new_path = os.path.join("pfps", filename)
+        pfp_path = file_path
 
-        shutil.copy(file_path, new_path)
-
-        pfp_path = new_path
-
-        pfp_img = Image.open(new_path)
+        pfp_img = Image.open(file_path)
         pfp_img.thumbnail((70, 70))
 
         pfp_preview = ImageTk.PhotoImage(pfp_img)
@@ -59,6 +63,14 @@ def submit():
 
     nameg = name
 
+    router.messages.append(
+        {
+            "name": "SYSTEM",
+            "message": f"{name} joined the chat",
+            "pfp": None
+        }
+    )
+
     import threading
 
     threading.Thread(
@@ -76,25 +88,31 @@ def open_chat():
     update_chat()
 
 
-def create_circle_pfp(path, size=(42, 42)):
+def create_circle_pfp(image_data, size=(42, 42)):
 
     try:
 
-        if path and os.path.exists(path):
+        if image_data:
 
-            img = Image.open(path).convert("RGB")
-            img.thumbnail(size)
+            decoded = base64.b64decode(image_data)
 
-            render = ImageTk.PhotoImage(img)
-            return render
+            img = Image.open(
+                io.BytesIO(decoded)
+            ).convert("RGB")
+
+        else:
+            img = Image.open("kototost.png").convert("RGB")
+
+        img.thumbnail(size)
+
+        return ImageTk.PhotoImage(img)
 
     except:
-        pass
 
-    fallback = Image.open("kototost.png").convert("RGB")
-    fallback.thumbnail(size)
+        fallback = Image.open("kototost.png").convert("RGB")
+        fallback.thumbnail(size)
 
-    return ImageTk.PhotoImage(fallback)
+        return ImageTk.PhotoImage(fallback)
 
 
 def update_chat():
@@ -105,7 +123,7 @@ def update_chat():
         messages = router.messages
 
         if len(messages) == rendered_messages:
-            root.after(300, update_chat)
+            root.after(250, update_chat)
             return
 
         for msg_data in messages[rendered_messages:]:
@@ -188,6 +206,18 @@ def update_chat():
 
             msg_label.pack(anchor="w")
 
+            current_time = datetime.now().strftime("%H:%M")
+
+            time_label = tk.Label(
+                bubble,
+                text=current_time,
+                bg=bubble_color,
+                fg="#cfcfcf",
+                font=("Segoe UI", 7)
+            )
+
+            time_label.pack(anchor="e", pady=(4, 0))
+
             if is_me:
 
                 pfp_render = create_circle_pfp(pfp)
@@ -218,7 +248,7 @@ def update_chat():
     except Exception as e:
         print("Error Updating:", e)
 
-    root.after(300, update_chat)
+    root.after(250, update_chat)
 
 
 def send_message(event=None):
@@ -227,13 +257,28 @@ def send_message(event=None):
 
     if msg:
 
+        pfp_data = None
+
+        try:
+
+            if pfp_path:
+
+                with open(pfp_path, "rb") as img_file:
+
+                    pfp_data = base64.b64encode(
+                        img_file.read()
+                    ).decode("utf-8")
+
+        except Exception as e:
+            print("PFP encode error:", e)
+
         try:
 
             router.send_message(
                 {
                     "name": nameg,
                     "message": msg,
-                    "pfp": pfp_path
+                    "pfp": pfp_data
                 }
             )
 
@@ -241,6 +286,16 @@ def send_message(event=None):
             print("Send error:", e)
 
         msg_entry.delete(0, tk.END)
+
+
+def typing_effect(event=None):
+
+    text = msg_entry.get().strip()
+
+    if text:
+        typing_label.config(text="Typing...")
+    else:
+        typing_label.config(text="Ready to chat")
 
 
 root = tk.Tk()
@@ -277,10 +332,10 @@ left_panel.pack(side="left", fill="y")
 
 news_title = tk.Label(
     left_panel,
-    text="NEWS",
+    text="LIVE NEWS",
     bg="#141414",
     fg=ACCENT,
-    font=("Segoe UI", 16, "bold")
+    font=("Segoe UI", 17, "bold")
 )
 
 news_title.pack(pady=(20, 12))
@@ -326,6 +381,7 @@ canvas.place(relwidth=1, relheight=1)
 
 canvas.create_oval(-100, -100, 180, 180, fill="#3a0000", outline="")
 canvas.create_oval(300, 500, 550, 750, fill="#220000", outline="")
+canvas.create_oval(250, 100, 550, 400, fill="#240000", outline="")
 canvas.create_rectangle(40, 40, 470, 570, fill=CARD, outline="")
 
 pfp_frame = tk.Frame(
@@ -350,8 +406,6 @@ pfp_button = tk.Button(
     bg=ACCENT,
     fg="white",
     relief="flat",
-    activebackground="#d10000",
-    activeforeground="white",
     font=("Segoe UI", 9, "bold"),
     cursor="hand2"
 )
@@ -477,8 +531,6 @@ confirm_btn = tk.Button(
     command=submit,
     bg=ACCENT,
     fg="white",
-    activebackground="#d10000",
-    activeforeground="white",
     relief="flat",
     font=("Segoe UI", 11, "bold"),
     cursor="hand2"
@@ -486,12 +538,12 @@ confirm_btn = tk.Button(
 
 confirm_btn.place(relx=0.5, y=570, anchor="center", width=320, height=40)
 
-chat_frame = tk.Frame(root, bg=BG)
-
 topbar = tk.Frame(
-    chat_frame,
-    bg="#141414",
-    height=65
+    chat_frame := tk.Frame(root, bg=BG),
+    bg="#151515",
+    height=70,
+    highlightbackground="#262626",
+    highlightthickness=1
 )
 
 topbar.pack(fill="x")
@@ -499,7 +551,7 @@ topbar.pack(fill="x")
 logo_label_chat = tk.Label(
     topbar,
     image=logo_chat,
-    bg="#141414"
+    bg="#151515"
 )
 
 logo_label_chat.pack(side="left", padx=15, pady=5)
@@ -508,11 +560,21 @@ chat_title = tk.Label(
     topbar,
     text="LAN Messenger",
     font=("Segoe UI", 15, "bold"),
-    bg="#141414",
+    bg="#151515",
     fg=TEXT
 )
 
 chat_title.pack(side="left")
+
+online_label = tk.Label(
+    topbar,
+    text="● Online",
+    bg="#151515",
+    fg="#44ff44",
+    font=("Segoe UI", 9)
+)
+
+online_label.pack(side="left", padx=10)
 
 chat_container = tk.Frame(
     chat_frame,
@@ -564,8 +626,8 @@ canvas_chat.create_window(
 
 bottom_frame = tk.Frame(
     chat_frame,
-    bg="#141414",
-    height=80
+    bg="#181818",
+    height=90
 )
 
 bottom_frame.pack(
@@ -573,14 +635,29 @@ bottom_frame.pack(
     fill="x"
 )
 
+typing_label = tk.Label(
+    bottom_frame,
+    text="Ready to chat",
+    bg="#181818",
+    fg="#888888",
+    font=("Segoe UI", 9)
+)
+
+typing_label.pack(anchor="w", padx=20, pady=(8, 0))
+
 msg_entry = tk.Entry(
     bottom_frame,
     bg="#202020",
     fg="white",
     insertbackground="white",
     relief="flat",
-    font=("Segoe UI", 11)
+    font=("Segoe UI", 11),
+    bd=0
 )
+
+msg_entry.config(highlightthickness=1)
+msg_entry.config(highlightbackground="#2f2f2f")
+msg_entry.config(highlightcolor=ACCENT)
 
 msg_entry.pack(
     side="left",
@@ -592,26 +669,34 @@ msg_entry.pack(
 )
 
 msg_entry.bind("<Return>", send_message)
+msg_entry.bind("<KeyRelease>", typing_effect)
 
 send_btn = tk.Button(
     bottom_frame,
-    text="➜",
+    text="SEND",
     command=send_message,
     bg=ACCENT,
     fg="white",
     relief="flat",
-    activebackground="#d10000",
-    activeforeground="white",
-    font=("Segoe UI", 14, "bold"),
+    font=("Segoe UI", 10, "bold"),
     cursor="hand2",
-    width=3
+    activebackground=ACCENT_HOVER,
+    activeforeground="white",
+    bd=0
 )
 
 send_btn.pack(
     side="right",
     padx=(0, 15),
     pady=15,
-    ipady=4
+    ipady=8,
+    ipadx=10
 )
+
+send_btn.bind("<Enter>", lambda e: on_enter(e, send_btn))
+send_btn.bind("<Leave>", lambda e: on_leave(e, send_btn))
+
+confirm_btn.bind("<Enter>", lambda e: on_enter(e, confirm_btn))
+confirm_btn.bind("<Leave>", lambda e: on_leave(e, confirm_btn))
 
 root.mainloop()
