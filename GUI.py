@@ -1,5 +1,3 @@
-
-
 import router
 import news
 import tkinter as tk
@@ -8,10 +6,13 @@ from PIL import Image, ImageTk
 import base64
 import io
 from datetime import datetime
+import threading
 
 nameg = None
 pfp_path = None
 rendered_messages = 0
+chosen_mode = None
+found_servers = []
 
 BG = "#0f0f0f"
 CARD = "#181818"
@@ -41,7 +42,6 @@ def choose_pfp():
     )
 
     if file_path:
-
         pfp_path = file_path
 
         pfp_img = Image.open(file_path)
@@ -53,13 +53,95 @@ def choose_pfp():
         pfp_label.image = pfp_preview
 
 
+def select_server_mode():
+    global chosen_mode
+
+    chosen_mode = "Server"
+
+    choice_frame.place_forget()
+    config_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+    mode_title.config(text="Server Setup")
+    scan_area.pack_forget()
+
+    ip_entry.delete(0, tk.END)
+    ip_entry.insert(0, router.get_local_ip())
+
+    port_entry.delete(0, tk.END)
+    port_entry.insert(0, "5000")
+
+    server_ip_label.config(text="Your IP: " + router.get_local_ip())
+    server_ip_label.pack(pady=(0, 10))
+
+
+def select_client_mode():
+    global chosen_mode
+
+    chosen_mode = "Client"
+
+    choice_frame.place_forget()
+    config_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+    mode_title.config(text="Client Setup")
+
+    ip_entry.delete(0, tk.END)
+    port_entry.delete(0, tk.END)
+    port_entry.insert(0, "5000")
+
+    server_ip_label.pack_forget()
+    scan_area.pack(fill="x", padx=35, pady=(5, 10))
+
+
+def scan_servers():
+    server_listbox.delete(0, tk.END)
+    server_listbox.insert(tk.END, "Scanning Wi-Fi...")
+
+    def worker():
+        global found_servers
+
+        found_servers = router.discover_servers()
+
+        root.after(0, update_server_list)
+
+    threading.Thread(target=worker, daemon=True).start()
+
+
+def update_server_list():
+    server_listbox.delete(0, tk.END)
+
+    if not found_servers:
+        server_listbox.insert(tk.END, "No servers found")
+        return
+
+    for server in found_servers:
+        server_listbox.insert(
+            tk.END,
+            f"{server['name']}  |  {server['ip']}:{server['port']}"
+        )
+
+
+def server_selected(event=None):
+    selected = server_listbox.curselection()
+
+    if selected:
+        index = selected[0]
+
+        if index < len(found_servers):
+            server = found_servers[index]
+
+            ip_entry.delete(0, tk.END)
+            ip_entry.insert(0, server["ip"])
+
+            port_entry.delete(0, tk.END)
+            port_entry.insert(0, server["port"])
+
+
 def submit():
     global nameg
 
     ip = ip_entry.get()
     port = port_entry.get()
     name = name_entry.get()
-    mode = mode_var.get()
 
     nameg = name
 
@@ -71,11 +153,9 @@ def submit():
         }
     )
 
-    import threading
-
     threading.Thread(
         target=router.start,
-        args=(ip, port, name, mode),
+        args=(ip, port, name, chosen_mode),
         daemon=True
     ).start()
 
@@ -89,11 +169,8 @@ def open_chat():
 
 
 def create_circle_pfp(image_data, size=(42, 42)):
-
     try:
-
         if image_data:
-
             decoded = base64.b64decode(image_data)
 
             img = Image.open(
@@ -108,7 +185,6 @@ def create_circle_pfp(image_data, size=(42, 42)):
         return ImageTk.PhotoImage(img)
 
     except:
-
         fallback = Image.open("kototost.png").convert("RGB")
         fallback.thumbnail(size)
 
@@ -119,7 +195,6 @@ def update_chat():
     global rendered_messages
 
     try:
-
         messages = router.messages
 
         if len(messages) == rendered_messages:
@@ -127,7 +202,6 @@ def update_chat():
             return
 
         for msg_data in messages[rendered_messages:]:
-
             sender = msg_data.get("name")
             message = msg_data.get("message")
             pfp = msg_data.get("pfp")
@@ -157,7 +231,6 @@ def update_chat():
             bubble_color = ACCENT if is_me else "#242424"
 
             if not is_me:
-
                 pfp_render = create_circle_pfp(pfp)
 
                 pfp_label_chat = tk.Label(
@@ -219,7 +292,6 @@ def update_chat():
             time_label.pack(anchor="e", pady=(4, 0))
 
             if is_me:
-
                 pfp_render = create_circle_pfp(pfp)
 
                 pfp_label_chat = tk.Label(
@@ -252,19 +324,14 @@ def update_chat():
 
 
 def send_message(event=None):
-
     msg = msg_entry.get().strip()
 
     if msg:
-
         pfp_data = None
 
         try:
-
             if pfp_path:
-
                 with open(pfp_path, "rb") as img_file:
-
                     pfp_data = base64.b64encode(
                         img_file.read()
                     ).decode("utf-8")
@@ -273,7 +340,6 @@ def send_message(event=None):
             print("PFP encode error:", e)
 
         try:
-
             router.send_message(
                 {
                     "name": nameg,
@@ -286,10 +352,10 @@ def send_message(event=None):
             print("Send error:", e)
 
         msg_entry.delete(0, tk.END)
+        typing_label.config(text="Ready to chat")
 
 
 def typing_effect(event=None):
-
     text = msg_entry.get().strip()
 
     if text:
@@ -348,7 +414,6 @@ news_box = tk.Frame(
 news_box.pack(fill="both", expand=True, padx=10)
 
 for item in news.texts:
-
     news_card = tk.Frame(
         news_box,
         bg=CARD
@@ -384,12 +449,93 @@ canvas.create_oval(300, 500, 550, 750, fill="#220000", outline="")
 canvas.create_oval(250, 100, 550, 400, fill="#240000", outline="")
 canvas.create_rectangle(40, 40, 470, 570, fill=CARD, outline="")
 
-pfp_frame = tk.Frame(
+choice_frame = tk.Frame(
     right_panel,
     bg=CARD
 )
 
-pfp_frame.place(relx=0.5, y=90, anchor="center")
+choice_frame.place(relx=0.5, rely=0.5, anchor="center", width=360, height=350)
+
+choice_title = tk.Label(
+    choice_frame,
+    text="Choose Mode",
+    bg=CARD,
+    fg=TEXT,
+    font=("Segoe UI", 24, "bold")
+)
+
+choice_title.pack(pady=(45, 10))
+
+choice_subtitle = tk.Label(
+    choice_frame,
+    text="Start a server or join one on Wi-Fi",
+    bg=CARD,
+    fg=SUBTEXT,
+    font=("Segoe UI", 10)
+)
+
+choice_subtitle.pack(pady=(0, 35))
+
+server_choice_btn = tk.Button(
+    choice_frame,
+    text="Start Server",
+    command=select_server_mode,
+    bg=ACCENT,
+    fg="white",
+    relief="flat",
+    font=("Segoe UI", 12, "bold"),
+    cursor="hand2"
+)
+
+server_choice_btn.pack(fill="x", padx=45, ipady=12, pady=8)
+
+client_choice_btn = tk.Button(
+    choice_frame,
+    text="Join as Client",
+    command=select_client_mode,
+    bg="#242424",
+    fg="white",
+    relief="flat",
+    font=("Segoe UI", 12, "bold"),
+    cursor="hand2",
+    activebackground="#333333",
+    activeforeground="white"
+)
+
+client_choice_btn.pack(fill="x", padx=45, ipady=12, pady=8)
+
+server_choice_btn.bind("<Enter>", lambda e: on_enter(e, server_choice_btn))
+server_choice_btn.bind("<Leave>", lambda e: on_leave(e, server_choice_btn))
+
+config_frame = tk.Frame(
+    right_panel,
+    bg=CARD
+)
+
+mode_title = tk.Label(
+    config_frame,
+    text="Setup",
+    font=("Segoe UI", 22, "bold"),
+    bg=CARD,
+    fg=TEXT
+)
+
+mode_title.pack(pady=(20, 5))
+
+server_ip_label = tk.Label(
+    config_frame,
+    text="",
+    bg=CARD,
+    fg=ACCENT,
+    font=("Segoe UI", 10, "bold")
+)
+
+pfp_frame = tk.Frame(
+    config_frame,
+    bg=CARD
+)
+
+pfp_frame.pack(pady=(5, 10))
 
 pfp_label = tk.Label(
     pfp_frame,
@@ -410,76 +556,18 @@ pfp_button = tk.Button(
     cursor="hand2"
 )
 
-pfp_button.pack(pady=8)
-
-title = tk.Label(
-    right_panel,
-    text="LAN Messenger",
-    font=("Segoe UI", 22, "bold"),
-    bg=CARD,
-    fg=TEXT
-)
-
-title.place(relx=0.5, y=210, anchor="center")
-
-subtitle = tk.Label(
-    right_panel,
-    text="Fast local communication",
-    font=("Segoe UI", 10),
-    bg=CARD,
-    fg=SUBTEXT
-)
-
-subtitle.place(relx=0.5, y=240, anchor="center")
+pfp_button.pack(pady=6)
 
 tk.Label(
-    right_panel,
-    text="IP Address",
-    bg=CARD,
-    fg=TEXT,
-    font=("Segoe UI", 10)
-).place(x=75, y=280)
-
-ip_entry = tk.Entry(
-    right_panel,
-    bg=ENTRY,
-    fg=TEXT,
-    insertbackground="white",
-    relief="flat",
-    font=("Segoe UI", 11)
-)
-
-ip_entry.place(x=75, y=305, width=320, height=35)
-
-tk.Label(
-    right_panel,
-    text="Port",
-    bg=CARD,
-    fg=TEXT,
-    font=("Segoe UI", 10)
-).place(x=75, y=355)
-
-port_entry = tk.Entry(
-    right_panel,
-    bg=ENTRY,
-    fg=TEXT,
-    insertbackground="white",
-    relief="flat",
-    font=("Segoe UI", 11)
-)
-
-port_entry.place(x=75, y=380, width=320, height=35)
-
-tk.Label(
-    right_panel,
+    config_frame,
     text="Username",
     bg=CARD,
     fg=TEXT,
     font=("Segoe UI", 10)
-).place(x=75, y=430)
+).pack(anchor="w", padx=35)
 
 name_entry = tk.Entry(
-    right_panel,
+    config_frame,
     bg=ENTRY,
     fg=TEXT,
     insertbackground="white",
@@ -487,46 +575,80 @@ name_entry = tk.Entry(
     font=("Segoe UI", 11)
 )
 
-name_entry.place(x=75, y=455, width=320, height=35)
+name_entry.pack(fill="x", padx=35, pady=(5, 10), ipady=7)
 
-mode_var = tk.StringVar(value="Client")
-
-mode_frame = tk.Frame(right_panel, bg=CARD)
-
-mode_frame.place(relx=0.5, y=520, anchor="center")
-
-client_btn = tk.Radiobutton(
-    mode_frame,
-    text="Client",
-    variable=mode_var,
-    value="Client",
+tk.Label(
+    config_frame,
+    text="IP Address",
     bg=CARD,
     fg=TEXT,
-    selectcolor=ENTRY,
-    activebackground=CARD,
-    activeforeground=TEXT,
     font=("Segoe UI", 10)
+).pack(anchor="w", padx=35)
+
+ip_entry = tk.Entry(
+    config_frame,
+    bg=ENTRY,
+    fg=TEXT,
+    insertbackground="white",
+    relief="flat",
+    font=("Segoe UI", 11)
 )
 
-client_btn.pack(side="left", padx=10)
+ip_entry.pack(fill="x", padx=35, pady=(5, 10), ipady=7)
 
-server_btn = tk.Radiobutton(
-    mode_frame,
-    text="Server",
-    variable=mode_var,
-    value="Server",
+tk.Label(
+    config_frame,
+    text="Port",
     bg=CARD,
     fg=TEXT,
-    selectcolor=ENTRY,
-    activebackground=CARD,
-    activeforeground=TEXT,
     font=("Segoe UI", 10)
+).pack(anchor="w", padx=35)
+
+port_entry = tk.Entry(
+    config_frame,
+    bg=ENTRY,
+    fg=TEXT,
+    insertbackground="white",
+    relief="flat",
+    font=("Segoe UI", 11)
 )
 
-server_btn.pack(side="left", padx=10)
+port_entry.pack(fill="x", padx=35, pady=(5, 10), ipady=7)
+
+scan_area = tk.Frame(
+    config_frame,
+    bg=CARD
+)
+
+scan_btn = tk.Button(
+    scan_area,
+    text="Scan Wi-Fi For Servers",
+    command=scan_servers,
+    bg=ACCENT,
+    fg="white",
+    relief="flat",
+    font=("Segoe UI", 9, "bold"),
+    cursor="hand2"
+)
+
+scan_btn.pack(fill="x", pady=(0, 8), ipady=6)
+
+server_listbox = tk.Listbox(
+    scan_area,
+    bg="#202020",
+    fg=TEXT,
+    selectbackground=ACCENT,
+    selectforeground="white",
+    relief="flat",
+    font=("Segoe UI", 9),
+    height=4
+)
+
+server_listbox.pack(fill="x")
+server_listbox.bind("<<ListboxSelect>>", server_selected)
 
 confirm_btn = tk.Button(
-    right_panel,
+    config_frame,
     text="Confirm",
     command=submit,
     bg=ACCENT,
@@ -536,10 +658,21 @@ confirm_btn = tk.Button(
     cursor="hand2"
 )
 
-confirm_btn.place(relx=0.5, y=570, anchor="center", width=320, height=40)
+confirm_btn.pack(fill="x", padx=35, pady=(10, 20), ipady=10)
+
+pfp_button.bind("<Enter>", lambda e: on_enter(e, pfp_button))
+pfp_button.bind("<Leave>", lambda e: on_leave(e, pfp_button))
+
+confirm_btn.bind("<Enter>", lambda e: on_enter(e, confirm_btn))
+confirm_btn.bind("<Leave>", lambda e: on_leave(e, confirm_btn))
+
+scan_btn.bind("<Enter>", lambda e: on_enter(e, scan_btn))
+scan_btn.bind("<Leave>", lambda e: on_leave(e, scan_btn))
+
+chat_frame = tk.Frame(root, bg=BG)
 
 topbar = tk.Frame(
-    chat_frame := tk.Frame(root, bg=BG),
+    chat_frame,
     bg="#151515",
     height=70,
     highlightbackground="#262626",
@@ -575,54 +708,6 @@ online_label = tk.Label(
 )
 
 online_label.pack(side="left", padx=10)
-
-chat_container = tk.Frame(
-    chat_frame,
-    bg=BG
-)
-
-chat_container.pack(
-    fill="both",
-    expand=True
-)
-
-canvas_chat = tk.Canvas(
-    chat_container,
-    bg=BG,
-    highlightthickness=0
-)
-
-canvas_chat.pack(
-    side="left",
-    fill="both",
-    expand=True
-)
-
-scrollbar = tk.Scrollbar(
-    chat_container,
-    orient="vertical",
-    command=canvas_chat.yview
-)
-
-scrollbar.pack(
-    side="right",
-    fill="y"
-)
-
-canvas_chat.configure(
-    yscrollcommand=scrollbar.set
-)
-
-messages_frame = tk.Frame(
-    canvas_chat,
-    bg=BG
-)
-
-canvas_chat.create_window(
-    (0, 0),
-    window=messages_frame,
-    anchor="nw"
-)
 
 bottom_frame = tk.Frame(
     chat_frame,
@@ -696,7 +781,59 @@ send_btn.pack(
 send_btn.bind("<Enter>", lambda e: on_enter(e, send_btn))
 send_btn.bind("<Leave>", lambda e: on_leave(e, send_btn))
 
-confirm_btn.bind("<Enter>", lambda e: on_enter(e, confirm_btn))
-confirm_btn.bind("<Leave>", lambda e: on_leave(e, confirm_btn))
+chat_container = tk.Frame(
+    chat_frame,
+    bg=BG
+)
+
+chat_container.pack(
+    fill="both",
+    expand=True
+)
+
+canvas_chat = tk.Canvas(
+    chat_container,
+    bg=BG,
+    highlightthickness=0
+)
+
+canvas_chat.pack(
+    side="left",
+    fill="both",
+    expand=True
+)
+
+scrollbar = tk.Scrollbar(
+    chat_container,
+    orient="vertical",
+    command=canvas_chat.yview
+)
+
+scrollbar.pack(
+    side="right",
+    fill="y"
+)
+
+canvas_chat.configure(
+    yscrollcommand=scrollbar.set
+)
+
+messages_frame = tk.Frame(
+    canvas_chat,
+    bg=BG
+)
+
+messages_window = canvas_chat.create_window(
+    (0, 0),
+    window=messages_frame,
+    anchor="nw"
+)
+
+
+def resize_messages_frame(event):
+    canvas_chat.itemconfig(messages_window, width=event.width)
+
+
+canvas_chat.bind("<Configure>", resize_messages_frame)
 
 root.mainloop()
