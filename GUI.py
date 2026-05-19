@@ -13,14 +13,63 @@ pfp_path = None
 rendered_messages = 0
 chosen_mode = None
 found_servers = []
+current_theme = "dark"
 
-BG = "#0f0f0f"
-CARD = "#181818"
-ENTRY = "#232323"
-ACCENT = "#ff2b2b"
-ACCENT_HOVER = "#ff4444"
-TEXT = "#ffffff"
-SUBTEXT = "#aaaaaa"
+THEMES = {
+    "dark": {
+        "BG": "#0f0f0f",
+        "CARD": "#181818",
+        "ENTRY": "#232323",
+        "ACCENT": "#ff2b2b",
+        "ACCENT_HOVER": "#ff4444",
+        "TEXT": "#ffffff",
+        "SUBTEXT": "#aaaaaa",
+        "PANEL": "#141414",
+        "OTHER_BUBBLE": "#242424",
+        "TOPBAR": "#151515",
+        "BOTTOM": "#181818",
+        "ENTRY_CHAT": "#202020",
+        "GLOW1": "#3a0000",
+        "GLOW2": "#220000",
+        "GLOW3": "#240000"
+    },
+    "light": {
+        "BG": "#f2f2f2",
+        "CARD": "#ffffff",
+        "ENTRY": "#e8e8e8",
+        "ACCENT": "#d62828",
+        "ACCENT_HOVER": "#ff4444",
+        "TEXT": "#111111",
+        "SUBTEXT": "#555555",
+        "PANEL": "#e6e6e6",
+        "OTHER_BUBBLE": "#dddddd",
+        "TOPBAR": "#ffffff",
+        "BOTTOM": "#ffffff",
+        "ENTRY_CHAT": "#eeeeee",
+        "GLOW1": "#ffd6d6",
+        "GLOW2": "#ffe6e6",
+        "GLOW3": "#ffcccc"
+    }
+}
+
+BG = THEMES[current_theme]["BG"]
+CARD = THEMES[current_theme]["CARD"]
+ENTRY = THEMES[current_theme]["ENTRY"]
+ACCENT = THEMES[current_theme]["ACCENT"]
+ACCENT_HOVER = THEMES[current_theme]["ACCENT_HOVER"]
+TEXT = THEMES[current_theme]["TEXT"]
+SUBTEXT = THEMES[current_theme]["SUBTEXT"]
+PANEL = THEMES[current_theme]["PANEL"]
+OTHER_BUBBLE = THEMES[current_theme]["OTHER_BUBBLE"]
+TOPBAR = THEMES[current_theme]["TOPBAR"]
+BOTTOM = THEMES[current_theme]["BOTTOM"]
+ENTRY_CHAT = THEMES[current_theme]["ENTRY_CHAT"]
+GLOW1 = THEMES[current_theme]["GLOW1"]
+GLOW2 = THEMES[current_theme]["GLOW2"]
+GLOW3 = THEMES[current_theme]["GLOW3"]
+
+news_cards = []
+news_labels = []
 
 
 def on_enter(e, btn):
@@ -29,6 +78,105 @@ def on_enter(e, btn):
 
 def on_leave(e, btn):
     btn.config(bg=ACCENT)
+
+
+def draw_background():
+    canvas.delete("bg_shape")
+    canvas.create_oval(-100, -100, 180, 180, fill=GLOW1, outline="", tags="bg_shape")
+    canvas.create_oval(300, 500, 550, 750, fill=GLOW2, outline="", tags="bg_shape")
+    canvas.create_oval(250, 100, 550, 400, fill=GLOW3, outline="", tags="bg_shape")
+    canvas.create_rectangle(40, 40, 470, 570, fill=CARD, outline="", tags="bg_shape")
+    canvas.tag_lower("bg_shape")
+
+
+def change_theme(theme):
+    global current_theme, BG, CARD, ENTRY, ACCENT, ACCENT_HOVER, TEXT, SUBTEXT
+    global PANEL, OTHER_BUBBLE, TOPBAR, BOTTOM, ENTRY_CHAT, GLOW1, GLOW2, GLOW3
+    global rendered_messages
+
+    current_theme = theme
+
+    BG = THEMES[theme]["BG"]
+    CARD = THEMES[theme]["CARD"]
+    ENTRY = THEMES[theme]["ENTRY"]
+    ACCENT = THEMES[theme]["ACCENT"]
+    ACCENT_HOVER = THEMES[theme]["ACCENT_HOVER"]
+    TEXT = THEMES[theme]["TEXT"]
+    SUBTEXT = THEMES[theme]["SUBTEXT"]
+    PANEL = THEMES[theme]["PANEL"]
+    OTHER_BUBBLE = THEMES[theme]["OTHER_BUBBLE"]
+    TOPBAR = THEMES[theme]["TOPBAR"]
+    BOTTOM = THEMES[theme]["BOTTOM"]
+    ENTRY_CHAT = THEMES[theme]["ENTRY_CHAT"]
+    GLOW1 = THEMES[theme]["GLOW1"]
+    GLOW2 = THEMES[theme]["GLOW2"]
+    GLOW3 = THEMES[theme]["GLOW3"]
+
+    root.configure(bg=BG)
+    main_frame.configure(bg=BG)
+    left_panel.configure(bg=PANEL)
+    news_title.configure(bg=PANEL, fg=ACCENT)
+    news_box.configure(bg=PANEL)
+    right_panel.configure(bg=BG)
+    canvas.configure(bg=BG)
+
+    draw_background()
+
+    for card in news_cards:
+        card.configure(bg=CARD)
+
+    for label in news_labels:
+        label.configure(bg=CARD, fg=TEXT)
+
+    choice_frame.configure(bg=CARD)
+    choice_title.configure(bg=CARD, fg=TEXT)
+    choice_subtitle.configure(bg=CARD, fg=SUBTEXT)
+
+    server_choice_btn.configure(bg=ACCENT)
+    client_choice_btn.configure(bg=OTHER_BUBBLE, fg=TEXT)
+
+    config_frame.configure(bg=CARD)
+    mode_title.configure(bg=CARD, fg=TEXT)
+    server_ip_label.configure(bg=CARD, fg=ACCENT)
+    pfp_frame.configure(bg=CARD)
+    pfp_label.configure(bg=CARD)
+    pfp_button.configure(bg=ACCENT)
+
+    username_label.configure(bg=CARD, fg=TEXT)
+    ip_label.configure(bg=CARD, fg=TEXT)
+    port_label.configure(bg=CARD, fg=TEXT)
+
+    name_entry.configure(bg=ENTRY, fg=TEXT)
+    ip_entry.configure(bg=ENTRY, fg=TEXT)
+    port_entry.configure(bg=ENTRY, fg=TEXT)
+
+    scan_area.configure(bg=CARD)
+    scan_btn.configure(bg=ACCENT)
+    server_listbox.configure(bg=ENTRY_CHAT, fg=TEXT, selectbackground=ACCENT)
+
+    confirm_btn.configure(bg=ACCENT)
+
+    chat_frame.configure(bg=BG)
+    topbar.configure(bg=TOPBAR)
+    logo_label_chat.configure(bg=TOPBAR)
+    chat_title.configure(bg=TOPBAR, fg=TEXT)
+    online_label.configure(bg=TOPBAR)
+
+    bottom_frame.configure(bg=BOTTOM)
+    typing_label.configure(bg=BOTTOM)
+    msg_entry.configure(bg=ENTRY_CHAT, fg=TEXT, highlightcolor=ACCENT)
+    send_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER)
+
+    canvas_chat.configure(bg=BG)
+    messages_frame.configure(bg=BG)
+
+    dark_btn.configure(bg=ACCENT if theme == "dark" else OTHER_BUBBLE)
+    light_btn.configure(bg=ACCENT if theme == "light" else OTHER_BUBBLE)
+
+    for widget in messages_frame.winfo_children():
+        widget.destroy()
+
+    rendered_messages = 0
 
 
 def choose_pfp():
@@ -228,7 +376,7 @@ def update_chat():
                 anchor="e" if is_me else "w"
             )
 
-            bubble_color = ACCENT if is_me else "#242424"
+            bubble_color = ACCENT if is_me else OTHER_BUBBLE
 
             if not is_me:
                 pfp_render = create_circle_pfp(pfp)
@@ -261,7 +409,7 @@ def update_chat():
                 bubble,
                 text=sender,
                 bg=bubble_color,
-                fg="#f0f0f0",
+                fg=TEXT,
                 font=("Segoe UI", 8, "bold")
             )
 
@@ -271,7 +419,7 @@ def update_chat():
                 bubble,
                 text=message,
                 bg=bubble_color,
-                fg="white",
+                fg=TEXT if not is_me else "white",
                 wraplength=300,
                 justify="left",
                 font=("Segoe UI", 10)
@@ -285,7 +433,7 @@ def update_chat():
                 bubble,
                 text=current_time,
                 bg=bubble_color,
-                fg="#cfcfcf",
+                fg=SUBTEXT if not is_me else "#f0f0f0",
                 font=("Segoe UI", 7)
             )
 
@@ -390,7 +538,7 @@ main_frame.pack(fill="both", expand=True)
 
 left_panel = tk.Frame(
     main_frame,
-    bg="#141414",
+    bg=PANEL,
     width=220
 )
 
@@ -399,7 +547,7 @@ left_panel.pack(side="left", fill="y")
 news_title = tk.Label(
     left_panel,
     text="LIVE NEWS",
-    bg="#141414",
+    bg=PANEL,
     fg=ACCENT,
     font=("Segoe UI", 17, "bold")
 )
@@ -408,7 +556,7 @@ news_title.pack(pady=(20, 12))
 
 news_box = tk.Frame(
     left_panel,
-    bg="#141414"
+    bg=PANEL
 )
 
 news_box.pack(fill="both", expand=True, padx=10)
@@ -419,9 +567,11 @@ for item in news.texts:
         bg=CARD
     )
 
+    news_cards.append(news_card)
+
     news_card.pack(fill="x", pady=6)
 
-    tk.Label(
+    news_label = tk.Label(
         news_card,
         text=item,
         bg=CARD,
@@ -431,7 +581,11 @@ for item in news.texts:
         padx=10,
         pady=10,
         font=("Segoe UI", 9)
-    ).pack(anchor="w")
+    )
+
+    news_labels.append(news_label)
+
+    news_label.pack(anchor="w")
 
 right_panel = tk.Frame(main_frame, bg=BG)
 right_panel.pack(side="right", fill="both", expand=True)
@@ -443,11 +597,7 @@ canvas = tk.Canvas(
 )
 
 canvas.place(relwidth=1, relheight=1)
-
-canvas.create_oval(-100, -100, 180, 180, fill="#3a0000", outline="")
-canvas.create_oval(300, 500, 550, 750, fill="#220000", outline="")
-canvas.create_oval(250, 100, 550, 400, fill="#240000", outline="")
-canvas.create_rectangle(40, 40, 470, 570, fill=CARD, outline="")
+draw_background()
 
 choice_frame = tk.Frame(
     right_panel,
@@ -493,8 +643,8 @@ client_choice_btn = tk.Button(
     choice_frame,
     text="Join as Client",
     command=select_client_mode,
-    bg="#242424",
-    fg="white",
+    bg=OTHER_BUBBLE,
+    fg=TEXT,
     relief="flat",
     font=("Segoe UI", 12, "bold"),
     cursor="hand2",
@@ -506,6 +656,39 @@ client_choice_btn.pack(fill="x", padx=45, ipady=12, pady=8)
 
 server_choice_btn.bind("<Enter>", lambda e: on_enter(e, server_choice_btn))
 server_choice_btn.bind("<Leave>", lambda e: on_leave(e, server_choice_btn))
+
+theme_frame = tk.Frame(
+    choice_frame,
+    bg=CARD
+)
+
+theme_frame.pack(pady=(20, 0))
+
+dark_menu_btn = tk.Button(
+    theme_frame,
+    text="Dark",
+    command=lambda: change_theme("dark"),
+    bg=ACCENT,
+    fg="white",
+    relief="flat",
+    font=("Segoe UI", 8, "bold"),
+    cursor="hand2"
+)
+
+dark_menu_btn.pack(side="left", padx=5)
+
+light_menu_btn = tk.Button(
+    theme_frame,
+    text="Light",
+    command=lambda: change_theme("light"),
+    bg=OTHER_BUBBLE,
+    fg=TEXT,
+    relief="flat",
+    font=("Segoe UI", 8, "bold"),
+    cursor="hand2"
+)
+
+light_menu_btn.pack(side="left", padx=5)
 
 config_frame = tk.Frame(
     right_panel,
@@ -558,13 +741,15 @@ pfp_button = tk.Button(
 
 pfp_button.pack(pady=6)
 
-tk.Label(
+username_label = tk.Label(
     config_frame,
     text="Username",
     bg=CARD,
     fg=TEXT,
     font=("Segoe UI", 10)
-).pack(anchor="w", padx=35)
+)
+
+username_label.pack(anchor="w", padx=35)
 
 name_entry = tk.Entry(
     config_frame,
@@ -577,13 +762,15 @@ name_entry = tk.Entry(
 
 name_entry.pack(fill="x", padx=35, pady=(5, 10), ipady=7)
 
-tk.Label(
+ip_label = tk.Label(
     config_frame,
     text="IP Address",
     bg=CARD,
     fg=TEXT,
     font=("Segoe UI", 10)
-).pack(anchor="w", padx=35)
+)
+
+ip_label.pack(anchor="w", padx=35)
 
 ip_entry = tk.Entry(
     config_frame,
@@ -596,13 +783,15 @@ ip_entry = tk.Entry(
 
 ip_entry.pack(fill="x", padx=35, pady=(5, 10), ipady=7)
 
-tk.Label(
+port_label = tk.Label(
     config_frame,
     text="Port",
     bg=CARD,
     fg=TEXT,
     font=("Segoe UI", 10)
-).pack(anchor="w", padx=35)
+)
+
+port_label.pack(anchor="w", padx=35)
 
 port_entry = tk.Entry(
     config_frame,
@@ -635,7 +824,7 @@ scan_btn.pack(fill="x", pady=(0, 8), ipady=6)
 
 server_listbox = tk.Listbox(
     scan_area,
-    bg="#202020",
+    bg=ENTRY_CHAT,
     fg=TEXT,
     selectbackground=ACCENT,
     selectforeground="white",
@@ -673,7 +862,7 @@ chat_frame = tk.Frame(root, bg=BG)
 
 topbar = tk.Frame(
     chat_frame,
-    bg="#151515",
+    bg=TOPBAR,
     height=70,
     highlightbackground="#262626",
     highlightthickness=1
@@ -684,7 +873,7 @@ topbar.pack(fill="x")
 logo_label_chat = tk.Label(
     topbar,
     image=logo_chat,
-    bg="#151515"
+    bg=TOPBAR
 )
 
 logo_label_chat.pack(side="left", padx=15, pady=5)
@@ -693,7 +882,7 @@ chat_title = tk.Label(
     topbar,
     text="LAN Messenger",
     font=("Segoe UI", 15, "bold"),
-    bg="#151515",
+    bg=TOPBAR,
     fg=TEXT
 )
 
@@ -702,16 +891,42 @@ chat_title.pack(side="left")
 online_label = tk.Label(
     topbar,
     text="● Online",
-    bg="#151515",
+    bg=TOPBAR,
     fg="#44ff44",
     font=("Segoe UI", 9)
 )
 
 online_label.pack(side="left", padx=10)
 
+light_btn = tk.Button(
+    topbar,
+    text="Light",
+    command=lambda: change_theme("light"),
+    bg=OTHER_BUBBLE,
+    fg=TEXT,
+    relief="flat",
+    font=("Segoe UI", 8, "bold"),
+    cursor="hand2"
+)
+
+light_btn.pack(side="right", padx=5)
+
+dark_btn = tk.Button(
+    topbar,
+    text="Dark",
+    command=lambda: change_theme("dark"),
+    bg=ACCENT,
+    fg="white",
+    relief="flat",
+    font=("Segoe UI", 8, "bold"),
+    cursor="hand2"
+)
+
+dark_btn.pack(side="right", padx=5)
+
 bottom_frame = tk.Frame(
     chat_frame,
-    bg="#181818",
+    bg=BOTTOM,
     height=90
 )
 
@@ -723,7 +938,7 @@ bottom_frame.pack(
 typing_label = tk.Label(
     bottom_frame,
     text="Ready to chat",
-    bg="#181818",
+    bg=BOTTOM,
     fg="#888888",
     font=("Segoe UI", 9)
 )
@@ -732,8 +947,8 @@ typing_label.pack(anchor="w", padx=20, pady=(8, 0))
 
 msg_entry = tk.Entry(
     bottom_frame,
-    bg="#202020",
-    fg="white",
+    bg=ENTRY_CHAT,
+    fg=TEXT,
     insertbackground="white",
     relief="flat",
     font=("Segoe UI", 11),
