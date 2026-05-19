@@ -2,6 +2,31 @@ import socket
 import threading
 import pickle
 import time
+import json
+from datetime import date
+
+def write_json(data,name):
+    with open(name,".json", "w") as file:
+        json.dump(data, file, indent=4)
+
+def read_json(name):
+    try:
+        with open(name,".json", "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return []
+
+class Data:
+    def __init__(self,data):
+        self.data = data
+    def to_dict(self):
+        return {
+            "data": self.data,
+
+        }
+
+
+datajsonm = read_json()
 
 messages = []
 conn = None
@@ -9,6 +34,7 @@ conn = None
 DISCOVERY_PORT = 54545
 DISCOVER_MESSAGE = "LAN_MESSENGER_DISCOVER"
 RESPONSE_MESSAGE = "LAN_MESSENGER_RESPONSE"
+
 
 
 def get_local_ip():
