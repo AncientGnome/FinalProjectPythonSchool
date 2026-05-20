@@ -2,13 +2,33 @@ import socket
 import threading
 import pickle
 import time
+import json
+servname = None
+
+def write_json(data):
+    global servname
+    with open(servname,".json", "w") as file:
+        json.dump(data, file, indent=4)
+
+def read_json():
+    global servname
+    try:
+        with open(servname,".json", "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return []
 
 messages = []
 conn = None
+addr = None
+server = None
 
+conns = []
 DISCOVERY_PORT = 54545
 DISCOVER_MESSAGE = "LAN_MESSENGER_DISCOVER"
 RESPONSE_MESSAGE = "LAN_MESSENGER_RESPONSE"
+
+
 
 
 def get_local_ip():
@@ -24,36 +44,40 @@ def get_local_ip():
 
 def send_message(data):
     global conn
-
+    global conns
     try:
         encoded = pickle.dumps(data)
         size = len(encoded).to_bytes(4, "big")
-        conn.sendall(size + encoded)
+        for i in conns:
+            i.sendall(size + encoded)
         messages.append(data)
-
+        read_json()
+        write_json(messages)
     except Exception as e:
         print("Send Error:", e)
 
 
 def receive_exact(size):
     global conn
-
+    global conns
+    global addr
     data = b""
 
     while len(data) < size:
-        packet = conn.recv(size - len(data))
+        for i in conns:
+            packet = i.recv(size - len(data))
 
-        if not packet:
-            return None
+            if not packet:
+                return None
 
-        data += packet
+            data += packet
 
     return data
 
 
 def receive_messages():
     global conn
-
+    global conns
     while True:
         try:
             raw_size = receive_exact(4)
@@ -66,10 +90,13 @@ def receive_messages():
 
             if not data:
                 break
-
-            decoded = pickle.loads(data)
-            messages.append(decoded)
-
+            if data == f"DO NOT SEND: there is a new person{conn}{addr}":
+                conns.insert(addr, conn)
+            else:
+                decoded = pickle.loads(data)
+                messages.append(decoded)
+                read_json()
+                write_json(messages)
         except Exception as e:
             print("Receive Error:", e)
             break
@@ -151,10 +178,27 @@ def discover_servers(timeout=2):
     udp.close()
     return found
 
+def get_people_in():
+    global conns
+    global conn
+    global server
+    global addr
+    while True:
+        conn, addr = server.accept()
+        conns.insert(addr,conn)
+        try:
+            encoded = pickle.dumps(f"DO NOT SEND: there is a new person{conn}{addr}")
+            size = len(encoded).to_bytes(4, "big")
+            for i in conns:
+                i.sendall(size + encoded)
+
+        except Exception as e:
+
+            print("Error sending information: ", e)
 
 def start_as_server(name, ip, port):
     global conn
-
+    global server
     threading.Thread(
         target=discovery_responder,
         args=(name, port),
@@ -166,8 +210,11 @@ def start_as_server(name, ip, port):
     server.listen(1)
 
     print("Server started on", ip, port)
+    threading.Thread(
+        target = get_people_in,
 
-    conn, addr = server.accept()
+    )
+
 
     threading.Thread(
         target=receive_messages,
@@ -179,8 +226,9 @@ def start_as_client(name, ip, port):
     global conn
 
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((ip, int(port)))
 
+    client.connect((ip, int(port)))
+    servname = socket.socket.getsockname()
     conn = client
     threading.Thread(
             target=receive_messages,
@@ -194,3 +242,5 @@ def start(ip, port, name, mode):
 
     elif mode == "Server":
         start_as_server(name, ip, port)
+
+
