@@ -15,7 +15,7 @@ background_photo = None
 rendered_messages = 0
 chosen_mode = None
 found_servers = []
-current_theme = "Red"
+current_theme = "Dark Red"
 
 THEMES = {
     "Classic": {
