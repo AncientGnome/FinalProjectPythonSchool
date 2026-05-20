@@ -10,13 +10,33 @@ import threading
 
 nameg = None
 pfp_path = None
+background_path = None
+background_photo = None
 rendered_messages = 0
 chosen_mode = None
 found_servers = []
-current_theme = "dark"
+current_theme = "Red"
 
 THEMES = {
-    "dark": {
+    "Classic": {
+        "BG": "#1e1e1e",
+        "CARD": "#252526",
+        "ENTRY": "#2d2d30",
+        "ACCENT": "#6c6c6c",
+        "ACCENT_HOVER": "#808080",
+        "TEXT": "#ffffff",
+        "SUBTEXT": "#b8b8b8",
+        "PANEL": "#202020",
+        "OTHER_BUBBLE": "#333333",
+        "TOPBAR": "#252526",
+        "BOTTOM": "#252526",
+        "ENTRY_CHAT": "#303030",
+        "GLOW1": "#333333",
+        "GLOW2": "#2a2a2a",
+        "GLOW3": "#3a3a3a",
+        "BTN_STYLE": "flat"
+    },
+    "Red": {
         "BG": "#0f0f0f",
         "CARD": "#181818",
         "ENTRY": "#232323",
@@ -31,9 +51,28 @@ THEMES = {
         "ENTRY_CHAT": "#202020",
         "GLOW1": "#3a0000",
         "GLOW2": "#220000",
-        "GLOW3": "#240000"
+        "GLOW3": "#240000",
+        "BTN_STYLE": "flat"
     },
-    "light": {
+    "Blue": {
+        "BG": "#07111f",
+        "CARD": "#0d1b2a",
+        "ENTRY": "#14283d",
+        "ACCENT": "#3a86ff",
+        "ACCENT_HOVER": "#5c9cff",
+        "TEXT": "#ffffff",
+        "SUBTEXT": "#b8d4ff",
+        "PANEL": "#091827",
+        "OTHER_BUBBLE": "#1b263b",
+        "TOPBAR": "#0b1d33",
+        "BOTTOM": "#0b1d33",
+        "ENTRY_CHAT": "#132842",
+        "GLOW1": "#002855",
+        "GLOW2": "#001d3d",
+        "GLOW3": "#003566",
+        "BTN_STYLE": "ridge"
+    },
+    "Light": {
         "BG": "#f2f2f2",
         "CARD": "#ffffff",
         "ENTRY": "#e8e8e8",
@@ -48,25 +87,56 @@ THEMES = {
         "ENTRY_CHAT": "#eeeeee",
         "GLOW1": "#ffd6d6",
         "GLOW2": "#ffe6e6",
-        "GLOW3": "#ffcccc"
+        "GLOW3": "#ffcccc",
+        "BTN_STYLE": "groove"
+    },
+    "Fully Dark": {
+        "BG": "#000000",
+        "CARD": "#080808",
+        "ENTRY": "#111111",
+        "ACCENT": "#ffffff",
+        "ACCENT_HOVER": "#cccccc",
+        "TEXT": "#ffffff",
+        "SUBTEXT": "#777777",
+        "PANEL": "#050505",
+        "OTHER_BUBBLE": "#111111",
+        "TOPBAR": "#050505",
+        "BOTTOM": "#050505",
+        "ENTRY_CHAT": "#101010",
+        "GLOW1": "#090909",
+        "GLOW2": "#050505",
+        "GLOW3": "#111111",
+        "BTN_STYLE": "solid"
     }
 }
 
-BG = THEMES[current_theme]["BG"]
-CARD = THEMES[current_theme]["CARD"]
-ENTRY = THEMES[current_theme]["ENTRY"]
-ACCENT = THEMES[current_theme]["ACCENT"]
-ACCENT_HOVER = THEMES[current_theme]["ACCENT_HOVER"]
-TEXT = THEMES[current_theme]["TEXT"]
-SUBTEXT = THEMES[current_theme]["SUBTEXT"]
-PANEL = THEMES[current_theme]["PANEL"]
-OTHER_BUBBLE = THEMES[current_theme]["OTHER_BUBBLE"]
-TOPBAR = THEMES[current_theme]["TOPBAR"]
-BOTTOM = THEMES[current_theme]["BOTTOM"]
-ENTRY_CHAT = THEMES[current_theme]["ENTRY_CHAT"]
-GLOW1 = THEMES[current_theme]["GLOW1"]
-GLOW2 = THEMES[current_theme]["GLOW2"]
-GLOW3 = THEMES[current_theme]["GLOW3"]
+
+def load_theme():
+    global BG, CARD, ENTRY, ACCENT, ACCENT_HOVER, TEXT, SUBTEXT
+    global PANEL, OTHER_BUBBLE, TOPBAR, BOTTOM, ENTRY_CHAT
+    global GLOW1, GLOW2, GLOW3, BTN_STYLE
+
+    theme = THEMES[current_theme]
+
+    BG = theme["BG"]
+    CARD = theme["CARD"]
+    ENTRY = theme["ENTRY"]
+    ACCENT = theme["ACCENT"]
+    ACCENT_HOVER = theme["ACCENT_HOVER"]
+    TEXT = theme["TEXT"]
+    SUBTEXT = theme["SUBTEXT"]
+    PANEL = theme["PANEL"]
+    OTHER_BUBBLE = theme["OTHER_BUBBLE"]
+    TOPBAR = theme["TOPBAR"]
+    BOTTOM = theme["BOTTOM"]
+    ENTRY_CHAT = theme["ENTRY_CHAT"]
+    GLOW1 = theme["GLOW1"]
+    GLOW2 = theme["GLOW2"]
+    GLOW3 = theme["GLOW3"]
+    BTN_STYLE = theme["BTN_STYLE"]
+
+
+load_theme()
 
 news_cards = []
 news_labels = []
@@ -82,35 +152,114 @@ def on_leave(e, btn):
 
 def draw_background():
     canvas.delete("bg_shape")
+    canvas.delete("bg_image")
+
+    if background_path:
+        try:
+            global background_photo
+
+            bg_img = Image.open(background_path)
+            bg_img = bg_img.resize((540, 640))
+            background_photo = ImageTk.PhotoImage(bg_img)
+
+            canvas.create_image(
+                0,
+                0,
+                image=background_photo,
+                anchor="nw",
+                tags="bg_image"
+            )
+
+            canvas.create_rectangle(
+                0,
+                0,
+                540,
+                640,
+                fill=BG,
+                stipple="gray50",
+                outline="",
+                tags="bg_shape"
+            )
+
+        except:
+            pass
+
     canvas.create_oval(-100, -100, 180, 180, fill=GLOW1, outline="", tags="bg_shape")
     canvas.create_oval(300, 500, 550, 750, fill=GLOW2, outline="", tags="bg_shape")
     canvas.create_oval(250, 100, 550, 400, fill=GLOW3, outline="", tags="bg_shape")
     canvas.create_rectangle(40, 40, 470, 570, fill=CARD, outline="", tags="bg_shape")
+    canvas.tag_lower("bg_image")
     canvas.tag_lower("bg_shape")
 
 
+def choose_background():
+    global background_path
+
+    file_path = filedialog.askopenfilename(
+        title="Choose Background",
+        filetypes=[
+            ("Image Files", "*.png *.jpg *.jpeg")
+        ]
+    )
+
+    if file_path:
+        background_path = file_path
+        draw_background()
+
+
+def open_theme_menu():
+    theme_window = tk.Toplevel(root)
+    theme_window.title("Themes")
+    theme_window.geometry("330x420")
+    theme_window.configure(bg=BG)
+
+    title_label = tk.Label(
+        theme_window,
+        text="Choose Theme",
+        bg=BG,
+        fg=TEXT,
+        font=("Segoe UI", 20, "bold")
+    )
+
+    title_label.pack(pady=(25, 15))
+
+    for theme_name in THEMES:
+        theme = THEMES[theme_name]
+
+        btn = tk.Button(
+            theme_window,
+            text=theme_name,
+            command=lambda t=theme_name: change_theme(t),
+            bg=theme["ACCENT"],
+            fg="white" if theme_name != "Fully Dark" else "#000000",
+            activebackground=theme["ACCENT_HOVER"],
+            relief=theme["BTN_STYLE"] if theme["BTN_STYLE"] != "solid" else "flat",
+            font=("Segoe UI", 11, "bold"),
+            cursor="hand2"
+        )
+
+        btn.pack(fill="x", padx=35, pady=7, ipady=8)
+
+    bg_btn = tk.Button(
+        theme_window,
+        text="Choose Custom Background",
+        command=choose_background,
+        bg=ACCENT,
+        fg="white",
+        activebackground=ACCENT_HOVER,
+        relief="flat",
+        font=("Segoe UI", 10, "bold"),
+        cursor="hand2"
+    )
+
+    bg_btn.pack(fill="x", padx=35, pady=(25, 8), ipady=8)
+
+
 def change_theme(theme):
-    global current_theme, BG, CARD, ENTRY, ACCENT, ACCENT_HOVER, TEXT, SUBTEXT
-    global PANEL, OTHER_BUBBLE, TOPBAR, BOTTOM, ENTRY_CHAT, GLOW1, GLOW2, GLOW3
-    global rendered_messages
+    global current_theme, rendered_messages
 
     current_theme = theme
-
-    BG = THEMES[theme]["BG"]
-    CARD = THEMES[theme]["CARD"]
-    ENTRY = THEMES[theme]["ENTRY"]
-    ACCENT = THEMES[theme]["ACCENT"]
-    ACCENT_HOVER = THEMES[theme]["ACCENT_HOVER"]
-    TEXT = THEMES[theme]["TEXT"]
-    SUBTEXT = THEMES[theme]["SUBTEXT"]
-    PANEL = THEMES[theme]["PANEL"]
-    OTHER_BUBBLE = THEMES[theme]["OTHER_BUBBLE"]
-    TOPBAR = THEMES[theme]["TOPBAR"]
-    BOTTOM = THEMES[theme]["BOTTOM"]
-    ENTRY_CHAT = THEMES[theme]["ENTRY_CHAT"]
-    GLOW1 = THEMES[theme]["GLOW1"]
-    GLOW2 = THEMES[theme]["GLOW2"]
-    GLOW3 = THEMES[theme]["GLOW3"]
+    load_theme()
 
     root.configure(bg=BG)
     main_frame.configure(bg=BG)
@@ -132,15 +281,15 @@ def change_theme(theme):
     choice_title.configure(bg=CARD, fg=TEXT)
     choice_subtitle.configure(bg=CARD, fg=SUBTEXT)
 
-    server_choice_btn.configure(bg=ACCENT)
-    client_choice_btn.configure(bg=OTHER_BUBBLE, fg=TEXT)
+    server_choice_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
+    client_choice_btn.configure(bg=OTHER_BUBBLE, fg=TEXT, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
 
     config_frame.configure(bg=CARD)
     mode_title.configure(bg=CARD, fg=TEXT)
     server_ip_label.configure(bg=CARD, fg=ACCENT)
     pfp_frame.configure(bg=CARD)
     pfp_label.configure(bg=CARD)
-    pfp_button.configure(bg=ACCENT)
+    pfp_button.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
 
     username_label.configure(bg=CARD, fg=TEXT)
     ip_label.configure(bg=CARD, fg=TEXT)
@@ -151,10 +300,10 @@ def change_theme(theme):
     port_entry.configure(bg=ENTRY, fg=TEXT)
 
     scan_area.configure(bg=CARD)
-    scan_btn.configure(bg=ACCENT)
+    scan_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
     server_listbox.configure(bg=ENTRY_CHAT, fg=TEXT, selectbackground=ACCENT)
 
-    confirm_btn.configure(bg=ACCENT)
+    confirm_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
 
     chat_frame.configure(bg=BG)
     topbar.configure(bg=TOPBAR)
@@ -162,16 +311,15 @@ def change_theme(theme):
     chat_title.configure(bg=TOPBAR, fg=TEXT)
     online_label.configure(bg=TOPBAR)
 
+    theme_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
+
     bottom_frame.configure(bg=BOTTOM)
     typing_label.configure(bg=BOTTOM)
     msg_entry.configure(bg=ENTRY_CHAT, fg=TEXT, highlightcolor=ACCENT)
-    send_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER)
+    send_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
 
     canvas_chat.configure(bg=BG)
     messages_frame.configure(bg=BG)
-
-    dark_btn.configure(bg=ACCENT if theme == "dark" else OTHER_BUBBLE)
-    light_btn.configure(bg=ACCENT if theme == "light" else OTHER_BUBBLE)
 
     for widget in messages_frame.winfo_children():
         widget.destroy()
@@ -409,7 +557,7 @@ def update_chat():
                 bubble,
                 text=sender,
                 bg=bubble_color,
-                fg=TEXT,
+                fg=TEXT if not is_me else "white",
                 font=("Segoe UI", 8, "bold")
             )
 
@@ -604,7 +752,7 @@ choice_frame = tk.Frame(
     bg=CARD
 )
 
-choice_frame.place(relx=0.5, rely=0.5, anchor="center", width=360, height=350)
+choice_frame.place(relx=0.5, rely=0.5, anchor="center", width=360, height=400)
 
 choice_title = tk.Label(
     choice_frame,
@@ -614,7 +762,7 @@ choice_title = tk.Label(
     font=("Segoe UI", 24, "bold")
 )
 
-choice_title.pack(pady=(45, 10))
+choice_title.pack(pady=(35, 10))
 
 choice_subtitle = tk.Label(
     choice_frame,
@@ -624,7 +772,7 @@ choice_subtitle = tk.Label(
     font=("Segoe UI", 10)
 )
 
-choice_subtitle.pack(pady=(0, 35))
+choice_subtitle.pack(pady=(0, 30))
 
 server_choice_btn = tk.Button(
     choice_frame,
@@ -632,7 +780,8 @@ server_choice_btn = tk.Button(
     command=select_server_mode,
     bg=ACCENT,
     fg="white",
-    relief="flat",
+    activebackground=ACCENT_HOVER,
+    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
     font=("Segoe UI", 12, "bold"),
     cursor="hand2"
 )
@@ -645,50 +794,49 @@ client_choice_btn = tk.Button(
     command=select_client_mode,
     bg=OTHER_BUBBLE,
     fg=TEXT,
-    relief="flat",
+    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
     font=("Segoe UI", 12, "bold"),
     cursor="hand2",
-    activebackground="#333333",
+    activebackground=ACCENT_HOVER,
     activeforeground="white"
 )
 
 client_choice_btn.pack(fill="x", padx=45, ipady=12, pady=8)
 
+theme_menu_btn = tk.Button(
+    choice_frame,
+    text="Themes",
+    command=open_theme_menu,
+    bg=ACCENT,
+    fg="white",
+    activebackground=ACCENT_HOVER,
+    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    font=("Segoe UI", 10, "bold"),
+    cursor="hand2"
+)
+
+theme_menu_btn.pack(fill="x", padx=45, ipady=9, pady=(18, 6))
+
+background_choice_btn = tk.Button(
+    choice_frame,
+    text="Custom Background",
+    command=choose_background,
+    bg=OTHER_BUBBLE,
+    fg=TEXT,
+    activebackground=ACCENT_HOVER,
+    activeforeground="white",
+    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    font=("Segoe UI", 10, "bold"),
+    cursor="hand2"
+)
+
+background_choice_btn.pack(fill="x", padx=45, ipady=9, pady=6)
+
 server_choice_btn.bind("<Enter>", lambda e: on_enter(e, server_choice_btn))
 server_choice_btn.bind("<Leave>", lambda e: on_leave(e, server_choice_btn))
 
-theme_frame = tk.Frame(
-    choice_frame,
-    bg=CARD
-)
-
-theme_frame.pack(pady=(20, 0))
-
-dark_menu_btn = tk.Button(
-    theme_frame,
-    text="Dark",
-    command=lambda: change_theme("dark"),
-    bg=ACCENT,
-    fg="white",
-    relief="flat",
-    font=("Segoe UI", 8, "bold"),
-    cursor="hand2"
-)
-
-dark_menu_btn.pack(side="left", padx=5)
-
-light_menu_btn = tk.Button(
-    theme_frame,
-    text="Light",
-    command=lambda: change_theme("light"),
-    bg=OTHER_BUBBLE,
-    fg=TEXT,
-    relief="flat",
-    font=("Segoe UI", 8, "bold"),
-    cursor="hand2"
-)
-
-light_menu_btn.pack(side="left", padx=5)
+theme_menu_btn.bind("<Enter>", lambda e: on_enter(e, theme_menu_btn))
+theme_menu_btn.bind("<Leave>", lambda e: on_leave(e, theme_menu_btn))
 
 config_frame = tk.Frame(
     right_panel,
@@ -734,7 +882,8 @@ pfp_button = tk.Button(
     command=choose_pfp,
     bg=ACCENT,
     fg="white",
-    relief="flat",
+    activebackground=ACCENT_HOVER,
+    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
     font=("Segoe UI", 9, "bold"),
     cursor="hand2"
 )
@@ -815,7 +964,8 @@ scan_btn = tk.Button(
     command=scan_servers,
     bg=ACCENT,
     fg="white",
-    relief="flat",
+    activebackground=ACCENT_HOVER,
+    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
     font=("Segoe UI", 9, "bold"),
     cursor="hand2"
 )
@@ -842,7 +992,8 @@ confirm_btn = tk.Button(
     command=submit,
     bg=ACCENT,
     fg="white",
-    relief="flat",
+    activebackground=ACCENT_HOVER,
+    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
     font=("Segoe UI", 11, "bold"),
     cursor="hand2"
 )
@@ -898,31 +1049,19 @@ online_label = tk.Label(
 
 online_label.pack(side="left", padx=10)
 
-light_btn = tk.Button(
+theme_btn = tk.Button(
     topbar,
-    text="Light",
-    command=lambda: change_theme("light"),
-    bg=OTHER_BUBBLE,
-    fg=TEXT,
-    relief="flat",
-    font=("Segoe UI", 8, "bold"),
-    cursor="hand2"
-)
-
-light_btn.pack(side="right", padx=5)
-
-dark_btn = tk.Button(
-    topbar,
-    text="Dark",
-    command=lambda: change_theme("dark"),
+    text="Themes",
+    command=open_theme_menu,
     bg=ACCENT,
     fg="white",
-    relief="flat",
+    activebackground=ACCENT_HOVER,
+    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
     font=("Segoe UI", 8, "bold"),
     cursor="hand2"
 )
 
-dark_btn.pack(side="right", padx=5)
+theme_btn.pack(side="right", padx=8)
 
 bottom_frame = tk.Frame(
     chat_frame,
@@ -977,10 +1116,10 @@ send_btn = tk.Button(
     command=send_message,
     bg=ACCENT,
     fg="white",
-    relief="flat",
+    activebackground=ACCENT_HOVER,
+    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
     font=("Segoe UI", 10, "bold"),
     cursor="hand2",
-    activebackground=ACCENT_HOVER,
     activeforeground="white",
     bd=0
 )
