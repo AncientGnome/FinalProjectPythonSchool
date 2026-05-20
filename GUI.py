@@ -36,7 +36,7 @@ THEMES = {
         "GLOW3": "#3a3a3a",
         "BTN_STYLE": "flat"
     },
-    "Red": {
+    "Dark Red": {
         "BG": "#0f0f0f",
         "CARD": "#181818",
         "ENTRY": "#232323",
