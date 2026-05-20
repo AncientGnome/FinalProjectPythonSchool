@@ -3,32 +3,54 @@ import threading
 import pickle
 import time
 import json
-servname = None
-
-def write_json(data):
-    global servname
-    with open(servname,".json", "w") as file:
-        json.dump(data, file, indent=4)
-
-def read_json():
-    global servname
-    try:
-        with open(servname,".json", "r") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return []
+import os
 
 messages = []
 conn = None
-addr = None
 server = None
-
 conns = []
+
+CHAT_FILE = "chat_history.json"
+
 DISCOVERY_PORT = 54545
 DISCOVER_MESSAGE = "LAN_MESSENGER_DISCOVER"
 RESPONSE_MESSAGE = "LAN_MESSENGER_RESPONSE"
 
 
+def clean_for_json(data):
+    return {
+        "name": data.get("name"),
+        "message": data.get("message"),
+        "pfp": None
+    }
+
+
+def load_chat():
+    global messages
+
+    if os.path.exists(CHAT_FILE):
+        try:
+            with open(CHAT_FILE, "r", encoding="utf-8") as file:
+                messages = json.load(file)
+        except:
+            messages = []
+
+
+def save_chat():
+    try:
+        safe_messages = []
+
+        for msg in messages:
+            safe_messages.append(clean_for_json(msg))
+
+        with open(CHAT_FILE, "w", encoding="utf-8") as file:
+            json.dump(safe_messages, file, indent=4)
+
+    except Exception as e:
+        print("Save Error:", e)
+
+
+load_chat()
 
 
 def get_local_ip():
@@ -42,64 +64,89 @@ def get_local_ip():
         return socket.gethostbyname(socket.gethostname())
 
 
-def send_message(data):
-    global conn
-    global conns
-    try:
-        encoded = pickle.dumps(data)
-        size = len(encoded).to_bytes(4, "big")
-        for i in conns:
-            i.sendall(size + encoded)
-        messages.append(data)
-        read_json()
-        write_json(messages)
-    except Exception as e:
-        print("Send Error:", e)
+def send_packet(sock, data):
+    encoded = pickle.dumps(data)
+    size = len(encoded).to_bytes(4, "big")
+    sock.sendall(size + encoded)
 
 
-def receive_exact(size):
-    global conn
-    global conns
-    global addr
+def receive_exact(sock, size):
     data = b""
 
     while len(data) < size:
-        for i in conns:
-            packet = i.recv(size - len(data))
+        packet = sock.recv(size - len(data))
 
-            if not packet:
-                return None
+        if not packet:
+            return None
 
-            data += packet
+        data += packet
 
     return data
 
 
-def receive_messages():
-    global conn
+def broadcast(data, exclude=None):
     global conns
+
+    dead = []
+
+    for client in conns:
+        if client == exclude:
+            continue
+
+        try:
+            send_packet(client, data)
+        except:
+            dead.append(client)
+
+    for client in dead:
+        if client in conns:
+            conns.remove(client)
+
+
+def send_message(data):
+    global conn, conns
+
+    try:
+        if conns:
+            broadcast(data)
+
+        elif conn:
+            send_packet(conn, data)
+
+        messages.append(data)
+        save_chat()
+
+    except Exception as e:
+        print("Send Error:", e)
+
+
+def receive_messages(sock, from_client=False):
     while True:
         try:
-            raw_size = receive_exact(4)
+            raw_size = receive_exact(sock, 4)
 
             if not raw_size:
                 break
 
             size = int.from_bytes(raw_size, "big")
-            data = receive_exact(size)
+            data = receive_exact(sock, size)
 
             if not data:
                 break
-            if data == f"DO NOT SEND: there is a new person{conn}{addr}":
-                conns.insert(addr, conn)
-            else:
-                decoded = pickle.loads(data)
-                messages.append(decoded)
-                read_json()
-                write_json(messages)
+
+            decoded = pickle.loads(data)
+            messages.append(decoded)
+            save_chat()
+
+            if from_client:
+                broadcast(decoded, exclude=sock)
+
         except Exception as e:
             print("Receive Error:", e)
             break
+
+    if sock in conns:
+        conns.remove(sock)
 
 
 def discovery_responder(name, port):
@@ -115,9 +162,8 @@ def discovery_responder(name, port):
     while True:
         try:
             data, address = udp.recvfrom(1024)
-            message = data.decode()
 
-            if message == DISCOVER_MESSAGE:
+            if data.decode() == DISCOVER_MESSAGE:
                 ip = get_local_ip()
                 response = f"{RESPONSE_MESSAGE}|{name}|{ip}|{port}"
                 udp.sendto(response.encode(), address)
@@ -146,7 +192,6 @@ def discover_servers(timeout=2):
         try:
             data, address = udp.recvfrom(1024)
             decoded = data.decode()
-
             if decoded.startswith(RESPONSE_MESSAGE):
                 parts = decoded.split("|")
 
@@ -154,12 +199,10 @@ def discover_servers(timeout=2):
                     name = parts[1]
                     ip = parts[2]
                     port = parts[3]
-
                     key = f"{ip}:{port}"
 
                     if key not in seen:
                         seen.add(key)
-
                         found.append(
                             {
                                 "name": name,
@@ -175,30 +218,38 @@ def discover_servers(timeout=2):
             print("Discovery Error:", e)
             break
 
+
     udp.close()
     return found
 
-def get_people_in():
-    global conns
-    global conn
-    global server
-    global addr
+
+def accept_clients():
+    global server, conns
+
     while True:
-        conn, addr = server.accept()
-        conns.insert(addr,conn)
         try:
-            encoded = pickle.dumps(f"DO NOT SEND: there is a new person{conn}{addr}")
-            size = len(encoded).to_bytes(4, "big")
-            for i in conns:
-                i.sendall(size + encoded)
+            client, address = server.accept()
+            conns.append(client)
+
+            for old_message in messages:
+                send_packet(client, old_message)
+
+            threading.Thread(
+                target=receive_messages,
+                args=(client, True),
+                daemon=True
+            ).start()
+
+            print("Client connected:", address)
 
         except Exception as e:
+            print("Accept Error:", e)
+            break
 
-            print("Error sending information: ", e)
 
 def start_as_server(name, ip, port):
-    global conn
     global server
+
     threading.Thread(
         target=discovery_responder,
         args=(name, port),
@@ -207,17 +258,12 @@ def start_as_server(name, ip, port):
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((ip, int(port)))
-    server.listen(1)
+    server.listen()
 
     print("Server started on", ip, port)
-    threading.Thread(
-        target = get_people_in,
-
-    )
-
 
     threading.Thread(
-        target=receive_messages,
+        target=accept_clients,
         daemon=True
     ).start()
 
@@ -226,14 +272,15 @@ def start_as_client(name, ip, port):
     global conn
 
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     client.connect((ip, int(port)))
-    servname = socket.socket.getsockname()
+
     conn = client
+
     threading.Thread(
-            target=receive_messages,
-            daemon=True
-        ).start()
+        target=receive_messages,
+        args=(client, False),
+        daemon=True
+    ).start()
 
 
 def start(ip, port, name, mode):
@@ -242,5 +289,3 @@ def start(ip, port, name, mode):
 
     elif mode == "Server":
         start_as_server(name, ip, port)
-
-
