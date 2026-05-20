@@ -12,29 +12,30 @@ nameg = None
 pfp_path = None
 background_path = None
 background_photo = None
+chat_background_photo = None
 rendered_messages = 0
 chosen_mode = None
 found_servers = []
-current_theme = "Red"
+current_theme = "Retro"
 
 THEMES = {
-    "Classic": {
-        "BG": "#1e1e1e",
-        "CARD": "#252526",
-        "ENTRY": "#2d2d30",
-        "ACCENT": "#6c6c6c",
-        "ACCENT_HOVER": "#808080",
-        "TEXT": "#ffffff",
-        "SUBTEXT": "#b8b8b8",
-        "PANEL": "#202020",
-        "OTHER_BUBBLE": "#333333",
-        "TOPBAR": "#252526",
-        "BOTTOM": "#252526",
-        "ENTRY_CHAT": "#303030",
-        "GLOW1": "#333333",
-        "GLOW2": "#2a2a2a",
-        "GLOW3": "#3a3a3a",
-        "BTN_STYLE": "flat"
+    "Retro": {
+        "BG": "#008080",
+        "CARD": "#c0c0c0",
+        "ENTRY": "#ffffff",
+        "ACCENT": "#000080",
+        "ACCENT_HOVER": "#0000aa",
+        "TEXT": "#000000",
+        "SUBTEXT": "#303030",
+        "PANEL": "#b0b0b0",
+        "OTHER_BUBBLE": "#e0e0e0",
+        "TOPBAR": "#c0c0c0",
+        "BOTTOM": "#c0c0c0",
+        "ENTRY_CHAT": "#ffffff",
+        "GLOW1": "#004040",
+        "GLOW2": "#006060",
+        "GLOW3": "#008080",
+        "BTN_STYLE": "raised"
     },
     "Red": {
         "BG": "#0f0f0f",
@@ -106,7 +107,7 @@ THEMES = {
         "GLOW1": "#090909",
         "GLOW2": "#050505",
         "GLOW3": "#111111",
-        "BTN_STYLE": "solid"
+        "BTN_STYLE": "flat"
     }
 }
 
@@ -150,14 +151,78 @@ def on_leave(e, btn):
     btn.config(bg=ACCENT)
 
 
+def button_relief():
+    if BTN_STYLE == "flat":
+        return "flat"
+
+    return BTN_STYLE
+
+
+def style_button(btn, label, primary=True):
+    if current_theme == "Retro":
+        btn.config(
+            text=f"[ {label.upper()} ]",
+            relief="raised",
+            bd=4,
+            font=("Courier New", 10, "bold"),
+            bg=ACCENT if primary else "#d0d0d0",
+            fg="white" if primary else "black",
+            activebackground=ACCENT_HOVER
+        )
+
+    elif current_theme == "Blue":
+        btn.config(
+            text=f"◆ {label}",
+            relief="ridge",
+            bd=3,
+            font=("Segoe UI", 10, "bold"),
+            bg=ACCENT if primary else OTHER_BUBBLE,
+            fg="white",
+            activebackground=ACCENT_HOVER
+        )
+
+    elif current_theme == "Light":
+        btn.config(
+            text=label,
+            relief="groove",
+            bd=2,
+            font=("Segoe UI", 10, "bold"),
+            bg=ACCENT if primary else OTHER_BUBBLE,
+            fg="white" if primary else TEXT,
+            activebackground=ACCENT_HOVER
+        )
+
+    elif current_theme == "Fully Dark":
+        btn.config(
+            text=f"> {label}",
+            relief="flat",
+            bd=1,
+            font=("Consolas", 10, "bold"),
+            bg=ACCENT if primary else OTHER_BUBBLE,
+            fg="black" if primary else TEXT,
+            activebackground=ACCENT_HOVER
+        )
+
+    else:
+        btn.config(
+            text=label,
+            relief="flat",
+            bd=0,
+            font=("Segoe UI", 10, "bold"),
+            bg=ACCENT if primary else OTHER_BUBBLE,
+            fg="white" if primary else TEXT,
+            activebackground=ACCENT_HOVER
+        )
+
+
 def draw_background():
+    global background_photo
+
     canvas.delete("bg_shape")
     canvas.delete("bg_image")
 
     if background_path:
         try:
-            global background_photo
-
             bg_img = Image.open(background_path)
             bg_img = bg_img.resize((540, 640))
             background_photo = ImageTk.PhotoImage(bg_img)
@@ -181,15 +246,61 @@ def draw_background():
                 tags="bg_shape"
             )
 
-        except:
-            pass
+        except Exception as e:
+            print("Background error:", e)
 
     canvas.create_oval(-100, -100, 180, 180, fill=GLOW1, outline="", tags="bg_shape")
     canvas.create_oval(300, 500, 550, 750, fill=GLOW2, outline="", tags="bg_shape")
     canvas.create_oval(250, 100, 550, 400, fill=GLOW3, outline="", tags="bg_shape")
     canvas.create_rectangle(40, 40, 470, 570, fill=CARD, outline="", tags="bg_shape")
+
     canvas.tag_lower("bg_image")
     canvas.tag_lower("bg_shape")
+
+
+def draw_chat_background():
+    global chat_background_photo
+
+    canvas_chat.delete("chat_bg")
+
+    if background_path:
+        try:
+            w = canvas_chat.winfo_width()
+            h = canvas_chat.winfo_height()
+
+            if w < 10:
+                w = 760
+
+            if h < 10:
+                h = 500
+
+            bg_img = Image.open(background_path)
+            bg_img = bg_img.resize((w, h))
+            chat_background_photo = ImageTk.PhotoImage(bg_img)
+
+            canvas_chat.create_image(
+                0,
+                0,
+                image=chat_background_photo,
+                anchor="nw",
+                tags="chat_bg"
+            )
+
+            canvas_chat.create_rectangle(
+                0,
+                0,
+                w,
+                h,
+                fill=BG,
+                stipple="gray50",
+                outline="",
+                tags="chat_bg"
+            )
+
+            canvas_chat.tag_lower("chat_bg")
+
+        except Exception as e:
+            print("Chat background error:", e)
 
 
 def choose_background():
@@ -205,12 +316,13 @@ def choose_background():
     if file_path:
         background_path = file_path
         draw_background()
+        draw_chat_background()
 
 
 def open_theme_menu():
     theme_window = tk.Toplevel(root)
     theme_window.title("Themes")
-    theme_window.geometry("330x420")
+    theme_window.geometry("330x450")
     theme_window.configure(bg=BG)
 
     title_label = tk.Label(
@@ -233,7 +345,7 @@ def open_theme_menu():
             bg=theme["ACCENT"],
             fg="white" if theme_name != "Fully Dark" else "#000000",
             activebackground=theme["ACCENT_HOVER"],
-            relief=theme["BTN_STYLE"] if theme["BTN_STYLE"] != "solid" else "flat",
+            relief=theme["BTN_STYLE"],
             font=("Segoe UI", 11, "bold"),
             cursor="hand2"
         )
@@ -247,7 +359,7 @@ def open_theme_menu():
         bg=ACCENT,
         fg="white",
         activebackground=ACCENT_HOVER,
-        relief="flat",
+        relief=button_relief(),
         font=("Segoe UI", 10, "bold"),
         cursor="hand2"
     )
@@ -281,15 +393,11 @@ def change_theme(theme):
     choice_title.configure(bg=CARD, fg=TEXT)
     choice_subtitle.configure(bg=CARD, fg=SUBTEXT)
 
-    server_choice_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
-    client_choice_btn.configure(bg=OTHER_BUBBLE, fg=TEXT, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
-
     config_frame.configure(bg=CARD)
     mode_title.configure(bg=CARD, fg=TEXT)
     server_ip_label.configure(bg=CARD, fg=ACCENT)
     pfp_frame.configure(bg=CARD)
     pfp_label.configure(bg=CARD)
-    pfp_button.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
 
     username_label.configure(bg=CARD, fg=TEXT)
     ip_label.configure(bg=CARD, fg=TEXT)
@@ -300,10 +408,7 @@ def change_theme(theme):
     port_entry.configure(bg=ENTRY, fg=TEXT)
 
     scan_area.configure(bg=CARD)
-    scan_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
     server_listbox.configure(bg=ENTRY_CHAT, fg=TEXT, selectbackground=ACCENT)
-
-    confirm_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
 
     chat_frame.configure(bg=BG)
     topbar.configure(bg=TOPBAR)
@@ -311,20 +416,29 @@ def change_theme(theme):
     chat_title.configure(bg=TOPBAR, fg=TEXT)
     online_label.configure(bg=TOPBAR)
 
-    theme_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
-
     bottom_frame.configure(bg=BOTTOM)
     typing_label.configure(bg=BOTTOM)
     msg_entry.configure(bg=ENTRY_CHAT, fg=TEXT, highlightcolor=ACCENT)
-    send_btn.configure(bg=ACCENT, activebackground=ACCENT_HOVER, relief=BTN_STYLE if BTN_STYLE != "solid" else "flat")
 
+    chat_container.configure(bg=BG)
     canvas_chat.configure(bg=BG)
     messages_frame.configure(bg=BG)
+
+    style_button(server_choice_btn, "Start Server", True)
+    style_button(client_choice_btn, "Join as Client", False)
+    style_button(theme_menu_btn, "Themes", True)
+    style_button(background_choice_btn, "Custom Background", False)
+    style_button(pfp_button, "Choose PFP", True)
+    style_button(scan_btn, "Scan Wi-Fi For Servers", True)
+    style_button(confirm_btn, "Confirm", True)
+    style_button(theme_btn, "Themes", True)
+    style_button(send_btn, "Send", True)
 
     for widget in messages_frame.winfo_children():
         widget.destroy()
 
     rendered_messages = 0
+    draw_chat_background()
 
 
 def choose_pfp():
@@ -409,10 +523,10 @@ def update_server_list():
         server_listbox.insert(tk.END, "No servers found")
         return
 
-    for server in found_servers:
+    for server_found in found_servers:
         server_listbox.insert(
             tk.END,
-            f"{server['name']}  |  {server['ip']}:{server['port']}"
+            f"{server_found['name']}  |  {server_found['ip']}:{server_found['port']}"
         )
 
 
@@ -423,13 +537,13 @@ def server_selected(event=None):
         index = selected[0]
 
         if index < len(found_servers):
-            server = found_servers[index]
+            server_found = found_servers[index]
 
             ip_entry.delete(0, tk.END)
-            ip_entry.insert(0, server["ip"])
+            ip_entry.insert(0, server_found["ip"])
 
             port_entry.delete(0, tk.END)
-            port_entry.insert(0, server["port"])
+            port_entry.insert(0, server_found["port"])
 
 
 def submit():
@@ -461,6 +575,7 @@ def submit():
 def open_chat():
     main_frame.pack_forget()
     chat_frame.pack(fill="both", expand=True)
+    draw_chat_background()
     update_chat()
 
 
@@ -781,7 +896,7 @@ server_choice_btn = tk.Button(
     bg=ACCENT,
     fg="white",
     activebackground=ACCENT_HOVER,
-    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    relief=button_relief(),
     font=("Segoe UI", 12, "bold"),
     cursor="hand2"
 )
@@ -794,7 +909,7 @@ client_choice_btn = tk.Button(
     command=select_client_mode,
     bg=OTHER_BUBBLE,
     fg=TEXT,
-    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    relief=button_relief(),
     font=("Segoe UI", 12, "bold"),
     cursor="hand2",
     activebackground=ACCENT_HOVER,
@@ -810,7 +925,7 @@ theme_menu_btn = tk.Button(
     bg=ACCENT,
     fg="white",
     activebackground=ACCENT_HOVER,
-    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    relief=button_relief(),
     font=("Segoe UI", 10, "bold"),
     cursor="hand2"
 )
@@ -825,12 +940,17 @@ background_choice_btn = tk.Button(
     fg=TEXT,
     activebackground=ACCENT_HOVER,
     activeforeground="white",
-    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    relief=button_relief(),
     font=("Segoe UI", 10, "bold"),
     cursor="hand2"
 )
 
 background_choice_btn.pack(fill="x", padx=45, ipady=9, pady=6)
+
+style_button(server_choice_btn, "Start Server", True)
+style_button(client_choice_btn, "Join as Client", False)
+style_button(theme_menu_btn, "Themes", True)
+style_button(background_choice_btn, "Custom Background", False)
 
 server_choice_btn.bind("<Enter>", lambda e: on_enter(e, server_choice_btn))
 server_choice_btn.bind("<Leave>", lambda e: on_leave(e, server_choice_btn))
@@ -883,7 +1003,7 @@ pfp_button = tk.Button(
     bg=ACCENT,
     fg="white",
     activebackground=ACCENT_HOVER,
-    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    relief=button_relief(),
     font=("Segoe UI", 9, "bold"),
     cursor="hand2"
 )
@@ -965,7 +1085,7 @@ scan_btn = tk.Button(
     bg=ACCENT,
     fg="white",
     activebackground=ACCENT_HOVER,
-    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    relief=button_relief(),
     font=("Segoe UI", 9, "bold"),
     cursor="hand2"
 )
@@ -993,12 +1113,16 @@ confirm_btn = tk.Button(
     bg=ACCENT,
     fg="white",
     activebackground=ACCENT_HOVER,
-    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    relief=button_relief(),
     font=("Segoe UI", 11, "bold"),
     cursor="hand2"
 )
 
 confirm_btn.pack(fill="x", padx=35, pady=(10, 20), ipady=10)
+
+style_button(pfp_button, "Choose PFP", True)
+style_button(scan_btn, "Scan Wi-Fi For Servers", True)
+style_button(confirm_btn, "Confirm", True)
 
 pfp_button.bind("<Enter>", lambda e: on_enter(e, pfp_button))
 pfp_button.bind("<Leave>", lambda e: on_leave(e, pfp_button))
@@ -1056,12 +1180,14 @@ theme_btn = tk.Button(
     bg=ACCENT,
     fg="white",
     activebackground=ACCENT_HOVER,
-    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    relief=button_relief(),
     font=("Segoe UI", 8, "bold"),
     cursor="hand2"
 )
 
 theme_btn.pack(side="right", padx=8)
+
+style_button(theme_btn, "Themes", True)
 
 bottom_frame = tk.Frame(
     chat_frame,
@@ -1117,7 +1243,7 @@ send_btn = tk.Button(
     bg=ACCENT,
     fg="white",
     activebackground=ACCENT_HOVER,
-    relief=BTN_STYLE if BTN_STYLE != "solid" else "flat",
+    relief=button_relief(),
     font=("Segoe UI", 10, "bold"),
     cursor="hand2",
     activeforeground="white",
@@ -1131,6 +1257,8 @@ send_btn.pack(
     ipady=8,
     ipadx=10
 )
+
+style_button(send_btn, "Send", True)
 
 send_btn.bind("<Enter>", lambda e: on_enter(e, send_btn))
 send_btn.bind("<Leave>", lambda e: on_leave(e, send_btn))
@@ -1186,6 +1314,7 @@ messages_window = canvas_chat.create_window(
 
 def resize_messages_frame(event):
     canvas_chat.itemconfig(messages_window, width=event.width)
+    draw_chat_background()
 
 
 canvas_chat.bind("<Configure>", resize_messages_frame)
